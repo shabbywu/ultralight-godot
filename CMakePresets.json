@@ -82,20 +82,22 @@
 		},
 		{
 			"name": "linux-x64-debug",
+			"inherits": "default",
 			"configurePreset": "linux-x64-debug",
 			"configuration": "Debug",
 			"condition": {
-				"type": "notEquals",
+				"type": "equals",
 				"lhs": "${hostSystemName}",
 				"rhs": "Linux"
 			}
 		},
 		{
 			"name": "linux-x64-release",
+			"inherits": "default",
 			"configurePreset": "linux-x64-release",
 			"configuration": "Release",
 			"condition": {
-				"type": "notEquals",
+				"type": "equals",
 				"lhs": "${hostSystemName}",
 				"rhs": "Linux"
 			}
