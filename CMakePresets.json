@@ -81,6 +81,26 @@
 			}
 		},
 		{
+			"name": "linux-x86-debug",
+			"configurePreset": "linux-x86-debug",
+			"configuration": "Debug",
+			"condition": {
+				"type": "notEquals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Linux"
+			}
+		},
+		{
+			"name": "linux-x86-release",
+			"configurePreset": "linux-x86-release",
+			"configuration": "Release",
+			"condition": {
+				"type": "notEquals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Linux"
+			}
+		},
+		{
 			"name": "windows-x64-debug",
 			"inherits": "default",
 			"configurePreset": "windows-x64-debug",
