@@ -1,0 +1,76 @@
+name: Build
+on: 
+- workflow_dispatch:
+
+env:
+  # Only used for the cache key. Increment version to force clean build.
+  GODOT_BASE_BRANCH: main
+
+concurrency:
+  group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}
+  cancel-in-progress: true
+
+jobs:
+  linux-cmake:
+    name: 🐧 Build (Linux, GCC, CMake)
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.PRIVATE_TOKEN }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qqq build-essential pkg-config cmake
+
+      - name: Build godot-cpp
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release .
+          make -j $(nproc) VERBOSE=1
+
+      - name: Build test GDExtension library
+        run: |
+          cd test && cmake -DCMAKE_BUILD_TYPE=Release -DGODOT_HEADERS_PATH="../godot-headers" -DCPP_BINDINGS_PATH=".." .
+          make -j $(nproc) VERBOSE=1
+
+  windows-msvc-cmake:
+    name: 🏁 Build (Windows, MSVC, CMake)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+        - preset: windows-x64-debug
+          os: windows-2022
+        - preset: windows-x64-release
+          os: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        if: ${{ matrix.os == "ubuntu-20.04" }}
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qqq build-essential pkg-config cmake
+
+      - name: Build godot-cpp
+        run: |
+          cmake --preset=${{ matrix.preset }}
+          cmake --preset=${{ matrix.preset }} --build --verbose
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64-debug.${{ github.ref_name }}
+          path: bin
+          retention-days: 14
+
+      # - name: Build test GDExtension library
+      #   run: |
+      #     cd test && cmake -DCMAKE_BUILD_TYPE=Release -DGODOT_HEADERS_PATH="../godot-headers" -DCPP_BINDINGS_PATH=".." -G"Visual Studio 16 2019" .
+      #     cmake --build . --verbose
