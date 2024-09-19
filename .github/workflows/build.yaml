@@ -11,40 +11,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  linux-cmake:
-    name: 🐧 Build (Linux, GCC, CMake)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          token: ${{ secrets.PRIVATE_TOKEN }}
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -qqq build-essential pkg-config cmake
-
-      - name: Build godot-cpp
-        run: |
-          cmake -DCMAKE_BUILD_TYPE=Release .
-          make -j $(nproc) VERBOSE=1
-
-  windows-msvc-cmake:
-    name: 🏁 Build (Windows, MSVC, CMake)
+  cmake:
+    name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
-        - preset: windows-x64-debug
+        - name: 🏁 Build (Windows, MSVC, CMake)
+          preset: windows-x64-debug
           os: windows-2022
-        - preset: windows-x64-release
+          env:
+        - name: 🏁 Build (Windows, MSVC, CMake)
+          preset: windows-x64-release
           os: windows-2022
-        # - preset: linux-x64-debug
-        #   os: ubuntu-latest
-        # - preset: linux-x64-release
-        #   os: ubuntu-latest
+          env:
+        - name: 🐧 Build (Linux, GCC, CMake)
+          preset: linux-x64-debug
+          os: ubuntu-latest
+          env:
+            CC:   gcc-10
+            CXX:  g++-10
+        - name: 🐧 Build (Linux, GCC, CMake)
+          preset: linux-x64-release
+          os: ubuntu-latest
+          env:
+            CC:   gcc-10
+            CXX:  g++-10
   
     steps:
       - name: Checkout
@@ -57,7 +49,7 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-20.04' }}
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -qqq build-essential pkg-config cmake
+          sudo apt-get install -qqq build-essential pkg-config cmake gcc-10 g++-10
 
       - name: Restore Cmake build cache
         uses: actions/cache/restore@v3
@@ -70,6 +62,7 @@ jobs:
             ${{matrix.preset}}
 
       - name: Build godot-cpp
+        env: ${{matrix.env}}
         run: |
           cmake --preset=${{ matrix.preset }}
           cmake --build --preset=${{ matrix.preset }}
