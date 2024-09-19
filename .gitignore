@@ -30,3 +30,38 @@
 *.exe
 *.out
 *.app
+
+# Godot 4+ specific ignores
+.godot/
+
+# Binaries
+*.o
+*.os
+*.so
+*.obj
+*.bc
+*.pyc
+*.dblite
+*.pdb
+*.lib
+*.config
+*.creator
+*.creator.user
+*.files
+*.includes
+*.idb
+*.exp
+
+# Other stuff
+*.log
+
+# VSCode
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+
+# IDEA
+.idea
+
+build
+bin

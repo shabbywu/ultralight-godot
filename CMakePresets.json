@@ -1,0 +1,84 @@
+{
+	"version": 5,
+	"configurePresets": [
+		{
+			"name": "default",
+			"binaryDir": "${sourceDir}/build/${presetName}",
+			"cacheVariables": {
+				"CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/bin/"
+			},
+			"environment": {
+				"VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/.vcpkg/triplets"
+			},
+			"condition": {
+				"type": "notEquals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			}
+		},
+		{
+			"name": "windows-x64-debug",
+			"inherits": "default",
+			"description": "This build is only available on Windows",
+			"architecture": "x64",
+			"generator": "Visual Studio 17 2022",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug"
+			},
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			}
+		},
+		{
+			"name": "windows-x64-release",
+			"inherits": "default",
+			"description": "This build is only available on Windows",
+			"architecture": "x64",
+			"generator": "Visual Studio 17 2022",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release"
+			},
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			}
+		}
+	],
+	"buildPresets": [
+		{
+			"name": "default",
+			"configurePreset": "default",
+			"configuration": "Release",
+			"condition": {
+				"type": "notEquals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			}
+		},
+		{
+			"name": "windows-x64-debug",
+			"inherits": "default",
+			"configurePreset": "windows-x64-debug",
+			"configuration": "Debug",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			}
+		},
+		{
+			"name": "windows-x64-release",
+			"inherits": "default",
+			"configurePreset": "windows-x64-release",
+			"configuration": "Release",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			}
+		}
+	]
+}
