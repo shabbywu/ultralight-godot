@@ -72,7 +72,7 @@ jobs:
       - name: Build godot-cpp
         run: |
           cmake --preset=${{ matrix.preset }}
-          cmake --preset=${{ matrix.preset }} --build
+          cmake --build --preset=${{ matrix.preset }}
 
       - name: Save Cmake build cache
         uses: actions/cache/save@v4
