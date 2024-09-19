@@ -45,33 +45,14 @@ jobs:
           submodules: recursive
           token: ${{ secrets.PRIVATE_TOKEN }}
 
-      - name: Install dependencies
-        if: ${{ matrix.os == 'ubuntu-20.04' }}
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -qqq build-essential pkg-config cmake gcc-10 g++-10
+      # Install latest CMake and Ninja.
+      - uses: lukka/get-cmake@latest
 
-      - name: Restore Cmake build cache
-        uses: actions/cache/restore@v3
+      - name: Run CMake consuming CMakePreset.json and run vcpkg to build packages
+        uses: lukka/run-cmake@v10
         with:
-          path: build
-          key: ${{matrix.preset}}-${{github.ref}}-${{github.sha}}
-          restore-keys: |
-            ${{matrix.preset}}-${{github.ref}}-${{github.sha}}
-            ${{matrix.preset}}-${{github.ref}}
-            ${{matrix.preset}}
-
-      - name: Build godot-cpp
-        env: ${{matrix.env}}
-        run: |
-          cmake --preset=${{ matrix.preset }}
-          cmake --build --preset=${{ matrix.preset }}
-
-      - name: Save Cmake build cache
-        uses: actions/cache/save@v4
-        with:
-          path: build
-          key: ${{matrix.preset}}-${{github.ref}}-${{github.sha}}
+          configurePreset: ${{ matrix.preset }}
+          buildPreset: ${{ matrix.preset }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
