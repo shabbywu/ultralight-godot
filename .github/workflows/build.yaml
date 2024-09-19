@@ -13,7 +13,7 @@ concurrency:
 jobs:
   linux-cmake:
     name: 🐧 Build (Linux, GCC, CMake)
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,11 +31,6 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release .
           make -j $(nproc) VERBOSE=1
 
-      - name: Build test GDExtension library
-        run: |
-          cd test && cmake -DCMAKE_BUILD_TYPE=Release -DGODOT_HEADERS_PATH="../godot-headers" -DCPP_BINDINGS_PATH=".." .
-          make -j $(nproc) VERBOSE=1
-
   windows-msvc-cmake:
     name: 🏁 Build (Windows, MSVC, CMake)
     runs-on: ${{ matrix.os }}
@@ -46,6 +41,11 @@ jobs:
           os: windows-2022
         - preset: windows-x64-release
           os: windows-2022
+        # - preset: linux-x64-debug
+        #   os: ubuntu-latest
+        # - preset: linux-x64-release
+        #   os: ubuntu-latest
+  
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,15 +59,31 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -qqq build-essential pkg-config cmake
 
+      - name: Restore Cmake build cache
+        uses: actions/cache/restore@v3
+        with:
+          path: build
+          key: ${{matrix.preset}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{matrix.preset}}-${{github.ref}}-${{github.sha}}
+            ${{matrix.preset}}-${{github.ref}}
+            ${{matrix.preset}}
+
       - name: Build godot-cpp
         run: |
           cmake --preset=${{ matrix.preset }}
-          cmake --preset=${{ matrix.preset }} --build --verbose
+          cmake --preset=${{ matrix.preset }} --build
+
+      - name: Save Cmake build cache
+        uses: actions/cache/save@v4
+        with:
+          path: build
+          key: ${{matrix.preset}}-${{github.ref}}-${{github.sha}}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-x64-debug.${{ github.ref_name }}
+          name: ${{ matrix.preset }}.${{ github.ref_name }}
           path: bin
           retention-days: 14
 

@@ -17,9 +17,34 @@
 			}
 		},
 		{
+			"name": "linux-x64-debug",
+			"inherits": "default",
+			"architecture": "x64",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug"
+			},
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Linux"
+			}
+		},
+		{
+			"name": "linux-x64-release",
+			"inherits": "default",
+			"architecture": "x64",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release"
+			},
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Linux"
+			}
+		},
+		{
 			"name": "windows-x64-debug",
 			"inherits": "default",
-			"description": "This build is only available on Windows",
 			"architecture": "x64",
 			"generator": "Visual Studio 17 2022",
 			"cacheVariables": {
@@ -34,7 +59,6 @@
 		{
 			"name": "windows-x64-release",
 			"inherits": "default",
-			"description": "This build is only available on Windows",
 			"architecture": "x64",
 			"generator": "Visual Studio 17 2022",
 			"cacheVariables": {
