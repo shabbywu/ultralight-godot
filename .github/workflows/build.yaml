@@ -17,21 +17,21 @@ jobs:
     strategy:
       matrix:
         include:
-        - name: 🏁 Build (Windows, MSVC, CMake)
+        - name: 🏁 Build (Windows, MSVC, CMake) - Debug
           preset: windows-x64-debug
           os: windows-2022
           env:
-        - name: 🏁 Build (Windows, MSVC, CMake)
+        - name: 🏁 Build (Windows, MSVC, CMake) - Release
           preset: windows-x64-release
           os: windows-2022
           env:
-        - name: 🐧 Build (Linux, GCC, CMake)
+        - name: 🐧 Build (Linux, GCC, CMake) - Debug
           preset: linux-x64-debug
           os: ubuntu-latest
           env:
             CC:   gcc-10
             CXX:  g++-10
-        - name: 🐧 Build (Linux, GCC, CMake)
+        - name: 🐧 Build (Linux, GCC, CMake) - Release
           preset: linux-x64-release
           os: ubuntu-latest
           env:
