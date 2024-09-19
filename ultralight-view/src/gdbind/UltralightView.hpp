@@ -199,6 +199,12 @@ void fragment(){
         auto window = ulbind17::detail::Object::GetGlobalObject(ctx->ctx());
         window.set(funcName.utf8().ptr(), Variant(callback));
     }
+
+    auto executeScript(godot::String script) {
+        auto ctx = view->LockJSContext();
+        return ulbind17::detail::Script(ctx->ctx(), script.utf8().ptr()).Evaluate<Variant>();
+    }
+
 #pragma endregion
 
 #pragma region ultralight property
@@ -244,8 +250,9 @@ void fragment(){
         ClassDB::bind_method(D_METHOD("set_html_file", "htmlFile"), &UltralightView::setHtmlFile);
         ClassDB::bind_method(D_METHOD("get_html_file"), &UltralightView::getHtmlFile);
         ADD_PROPERTY(PropertyInfo(Variant::RID, "htmlFile"), "set_html_file", "get_html_file");
-
+        
         ClassDB::bind_method(D_METHOD("bind_func", "funcName", "callback"), &UltralightView::bindFunc);
+        ClassDB::bind_method(D_METHOD("execute_script", "script"), &UltralightView::executeScript);
 
         // signal callback
         ClassDB::bind_method(D_METHOD("on_update_frame"), &UltralightView::updateFrame);

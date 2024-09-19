@@ -13,8 +13,8 @@ private:
 	ultralight::RefPtr<ultralight::Renderer> render;
 	UltralightRenderer() {
 		render = ultralight::Renderer::Create();
-	}
-	UltralightRenderer(const UltralightRenderer &other) = delete;
+    }
+    UltralightRenderer(const UltralightRenderer &other) = delete;
 	void operator=(const UltralightRenderer &other) = delete;
 
 public:
@@ -33,6 +33,7 @@ public:
 	/// @brief Render all active views to their respective surfaces and render targets.
 	/// You should call this once per frame (usually in synchrony with the monitor's refresh rate).
 	void updateFrame() {
+		render->RefreshDisplay(0);
 		render->Render();
 	}
 
