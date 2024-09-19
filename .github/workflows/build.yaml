@@ -48,11 +48,12 @@ jobs:
       # Install latest CMake and Ninja.
       - uses: lukka/get-cmake@latest
 
-      - name: Run CMake consuming CMakePreset.json and run vcpkg to build packages
+      - name: Run CMake consuming CMakePreset.json
         uses: lukka/run-cmake@v10
         with:
           configurePreset: ${{ matrix.preset }}
           buildPreset: ${{ matrix.preset }}
+        env: ${{ matrix.env }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
