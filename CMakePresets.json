@@ -19,7 +19,6 @@
 		{
 			"name": "linux-x64-debug",
 			"inherits": "default",
-			"architecture": "x64",
 			"generator": "Ninja",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Debug"
@@ -33,7 +32,6 @@
 		{
 			"name": "linux-x64-release",
 			"inherits": "default",
-			"architecture": "x64",
 			"generator": "Ninja",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Release"
