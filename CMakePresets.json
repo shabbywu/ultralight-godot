@@ -81,8 +81,8 @@
 			}
 		},
 		{
-			"name": "linux-x86-debug",
-			"configurePreset": "linux-x86-debug",
+			"name": "linux-x64-debug",
+			"configurePreset": "linux-x64-debug",
 			"configuration": "Debug",
 			"condition": {
 				"type": "notEquals",
@@ -91,8 +91,8 @@
 			}
 		},
 		{
-			"name": "linux-x86-release",
-			"configurePreset": "linux-x86-release",
+			"name": "linux-x64-release",
+			"configurePreset": "linux-x64-release",
 			"configuration": "Release",
 			"condition": {
 				"type": "notEquals",
