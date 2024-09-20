@@ -29,14 +29,14 @@ jobs:
           preset: linux-x64-debug
           os: ubuntu-latest
           env:
-            CC:   gcc-10
-            CXX:  g++-10
+            CC:   gcc-13
+            CXX:  g++-13
         - name: 🐧 Build (Linux, GCC, CMake) - Release
           preset: linux-x64-release
           os: ubuntu-latest
           env:
-            CC:   gcc-10
-            CXX:  g++-10
+            CC:   gcc-13
+            CXX:  g++-13
   
     steps:
       - name: Checkout
