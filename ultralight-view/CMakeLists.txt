@@ -23,8 +23,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${BUILD_PATH}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${BUILD_PATH}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${BUILD_PATH}")
 
-# Set the c++ standard to c++17
-set(CMAKE_CXX_STANDARD 17)
+# Set the c++ standard to c++20
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -94,6 +94,7 @@ target_include_directories(
   ${PROJECT_NAME} SYSTEM
   PRIVATE ${CPP_BINDINGS_PATH}/include ${CPP_BINDINGS_PATH}/gen/include
   ${GODOT_GDEXTENSION_DIR}
+  ${CMAKE_CURRENT_LIST_DIR}/src
 )
 target_link_libraries(${PROJECT_NAME} godot-cpp ulbind17::ulbind17)
 

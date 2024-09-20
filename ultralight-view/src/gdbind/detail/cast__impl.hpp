@@ -1,9 +1,10 @@
 #pragma once
 #include "cast__def.hpp"
-#include "ulbind17/cast.hpp"
-
 #include "godot_callable__def.hpp"
 #include "native_function.hpp"
+#include "ulbind17/ulbind17.hpp"
+#include <godot_cpp/variant/utility_functions.hpp>
+#include <string>
 
 using namespace godot;
 
@@ -36,10 +37,22 @@ JSValueRef generic_cast(JSContextRef ctx, Variant value) {
         return gdbind::NativeFunction(ctx, func).rawref();
     }
     case Variant::Type::DICTIONARY: {
-        // TODO: support cast godot::Dictionary to js object
+        Object out(ctx);
+        godot::Dictionary d(value);
+        auto keys = d.keys();
+        for (int i = 0; i < keys.size(); i++) {
+            godot::String key = keys[i];
+            out.set(std::string(key.utf8().ptr()), generic_cast<Variant, JSValueRef>(ctx, d.get(key, nullptr)));
+        }
+        return out.rawref();
     }
     case Variant::Type::ARRAY: {
-        // TODO: support cast godot:Array to js array
+        Array out(ctx);
+        godot::Array a(value);
+        for (int i = 0; i < a.size(); i++) {
+            out.set(i, generic_cast<Variant, JSValueRef>(ctx, std::move(a[i])));
+        }
+        return out.rawref();
     }
     default:
         break;
@@ -58,6 +71,25 @@ Variant generic_cast(JSContextRef ctx, JSValueRef value) {
     case JSType::kJSTypeString: {
         auto s = generic_cast<JSValueRef, std::string>(ctx, std::move(value));
         return godot::String(s.data());
+    }
+    case JSType::kJSTypeObject: {
+        if (JSValueIsArray(ctx, value)) {
+            godot::Array out;
+            Array a(ctx, JSValueToObject(ctx, value, nullptr));
+            out.resize(a.size());
+            for (int i = 0; i < a.size(); i++) {
+                out[i] = a.get<Variant>(i);
+            }
+            return out;
+        } else {
+            godot::Dictionary out;
+            Object o(ctx, JSValueToObject(ctx, value, nullptr));
+            auto keys = o.keys();
+            for (auto key : keys) {
+                out[godot::String(key.data())] = o.get<Variant>(key);
+            }
+            return out;
+        }
     }
     }
     return nullptr;

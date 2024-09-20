@@ -19,11 +19,11 @@
 
 #include <ulbind17/ulbind17.hpp>
 
-#include "PackedByteArraySurface.hpp"
-#include "UltralightSingleton.hpp"
-#include "debug.hpp"
-#include "detail/cast.hpp"
-#include "detail/godot_callable.hpp"
+#include "gdbind/PackedByteArraySurface.hpp"
+#include "gdbind/UltralightSingleton.hpp"
+#include "gdbind/debug.hpp"
+#include "gdbind/detail/cast.hpp"
+#include "gdbind/detail/godot_callable.hpp"
 
 using namespace ultralight;
 using namespace godot;
@@ -147,7 +147,8 @@ class UltralightView : public TextureRect {
         cfg.is_accelerated = false;
         auto size = get_size();
         if (size.width > 0 && size.height > 0) {
-            view = renderer->createView(size.width, size.height, cfg, nullptr);
+            auto result = renderer->createView(size.width, size.height, cfg, nullptr);
+            view = result.View;
             if (!html.is_empty()) {
                 auto utf32 = html.utf32();
                 ultralight::String32 content(utf32.get_data(), utf32.length());
@@ -157,6 +158,11 @@ class UltralightView : public TextureRect {
                 ultralight::String32 content(utf32.get_data(), utf32.length());
                 view->LoadHTML(content);
             }
+            result.LoadListener->onDOMReady = [this](ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
+                                                     const ultralight::String &url) {
+                UtilityFunctions::print("on_dom_ready!");
+                emit_signal("on_dom_ready");
+            };
         }
     }
 #pragma endregion
@@ -259,6 +265,8 @@ void fragment(){
         // signal callback
         ClassDB::bind_method(D_METHOD("on_update_frame"), &UltralightView::updateFrame);
         ClassDB::bind_method(D_METHOD("on_resized"), &UltralightView::onResized);
+
+        ADD_SIGNAL(MethodInfo("on_dom_ready"));
     }
 };
 } // namespace gdbind

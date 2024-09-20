@@ -15,7 +15,7 @@ class godot_callable : public ulbind17::detail::generic_function {
 
   public:
     inline std::function<Caller> build_caller_impl();
-    virtual inline std::function<Caller> get_caller_impl() {
+    virtual std::function<Caller> get_caller_impl() {
         return build_caller_impl();
     }
 
