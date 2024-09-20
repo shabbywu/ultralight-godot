@@ -158,11 +158,13 @@ class UltralightView : public TextureRect {
                 ultralight::String32 content(utf32.get_data(), utf32.length());
                 view->LoadHTML(content);
             }
-            result.LoadListener->onDOMReady = [this](ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
-                                                     const ultralight::String &url) {
-                UtilityFunctions::print("on_dom_ready!");
-                emit_signal("on_dom_ready");
+
+            result.LoadListener->onWindowObjectReady = [this](ultralight::View *caller, uint64_t frame_id,
+                                                              bool is_main_frame, const ultralight::String &url) {
+                emit_signal("on_window_object_ready");
             };
+            result.LoadListener->onDOMReady = [this](ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
+                                                     const ultralight::String &url) { emit_signal("on_dom_ready"); };
         }
     }
 #pragma endregion
@@ -266,6 +268,7 @@ void fragment(){
         ClassDB::bind_method(D_METHOD("on_update_frame"), &UltralightView::updateFrame);
         ClassDB::bind_method(D_METHOD("on_resized"), &UltralightView::onResized);
 
+        ADD_SIGNAL(MethodInfo("on_window_object_ready"));
         ADD_SIGNAL(MethodInfo("on_dom_ready"));
     }
 };
