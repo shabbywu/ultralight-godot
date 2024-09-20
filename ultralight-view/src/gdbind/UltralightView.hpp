@@ -159,11 +159,11 @@ class UltralightView : public TextureRect {
                 view->LoadHTML(content);
             }
 
-            result.LoadListener->onWindowObjectReady = [this](ultralight::View *caller, uint64_t frame_id,
+            result.loadListener->onWindowObjectReady = [this](ultralight::View *caller, uint64_t frame_id,
                                                               bool is_main_frame, const ultralight::String &url) {
                 emit_signal("on_window_object_ready");
             };
-            result.LoadListener->onDOMReady = [this](ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
+            result.loadListener->onDOMReady = [this](ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
                                                      const ultralight::String &url) { emit_signal("on_dom_ready"); };
         }
     }

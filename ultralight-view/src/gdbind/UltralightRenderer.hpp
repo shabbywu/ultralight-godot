@@ -12,9 +12,9 @@ using namespace godot;
 namespace gdbind {
 class UltralightRenderer {
     struct CreateViewResult {
-        ultralight::RefPtr<ultralight::View> View;
-        ViewListener *ViewListener;
-        LoadListener *LoadListener;
+        ultralight::RefPtr<ultralight::View> view;
+        ViewListener *viewListener;
+        LoadListener *loadListener;
     };
 
   private:
@@ -65,12 +65,12 @@ class UltralightRenderer {
     CreateViewResult createView(uint32_t width, uint32_t height, const ViewConfig &config, RefPtr<Session> session) {
         auto view = render->CreateView(width, height, config, session);
         CreateViewResult result = {
-            .View = view,
-            .ViewListener = new ViewListener,
-            .LoadListener = new LoadListener,
+            .view = view,
+            .viewListener = new ViewListener,
+            .loadListener = new LoadListener,
         };
-        view->set_view_listener(result.ViewListener);
-        view->set_load_listener(result.LoadListener);
+        view->set_view_listener(result.viewListener);
+        view->set_load_listener(result.loadListener);
         return result;
     }
 };

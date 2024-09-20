@@ -82,13 +82,18 @@ Variant generic_cast(JSContextRef ctx, JSValueRef value) {
             }
             return out;
         } else {
-            godot::Dictionary out;
             Object o(ctx, JSValueToObject(ctx, value, nullptr));
-            auto keys = o.keys();
-            for (auto key : keys) {
-                out[godot::String(key.data())] = o.get<Variant>(key);
+            if (o.isFunction()) {
+                // godot does'not support dynamic function
+                UtilityFunctions::push_error("godot does'not support dynamic function, can't convert js function to godot callable");
+            } else {
+                godot::Dictionary out;
+                auto keys = o.keys();
+                for (auto key : keys) {
+                    out[godot::String(key.data())] = o.get<Variant>(key);
+                }
+                return out;
             }
-            return out;
         }
     }
     }
