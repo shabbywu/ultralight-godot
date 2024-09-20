@@ -22,6 +22,8 @@
 #include "PackedByteArraySurface.hpp"
 #include "UltralightSingleton.hpp"
 #include "debug.hpp"
+#include "detail/cast.hpp"
+#include "detail/godot_callable.hpp"
 
 using namespace ultralight;
 using namespace godot;
@@ -197,7 +199,7 @@ void fragment(){
     void bindFunc(godot::String funcName, Callable callback) {
         auto ctx = view->LockJSContext();
         auto window = ulbind17::detail::Object::GetGlobalObject(ctx->ctx());
-        window.set(funcName.utf8().ptr(), Variant(callback));
+        window.set(funcName.utf8().ptr(), std::move(Variant(callback)));
     }
 
     auto executeScript(godot::String script) {
@@ -250,7 +252,7 @@ void fragment(){
         ClassDB::bind_method(D_METHOD("set_html_file", "htmlFile"), &UltralightView::setHtmlFile);
         ClassDB::bind_method(D_METHOD("get_html_file"), &UltralightView::getHtmlFile);
         ADD_PROPERTY(PropertyInfo(Variant::RID, "htmlFile"), "set_html_file", "get_html_file");
-        
+
         ClassDB::bind_method(D_METHOD("bind_func", "funcName", "callback"), &UltralightView::bindFunc);
         ClassDB::bind_method(D_METHOD("execute_script", "script"), &UltralightView::executeScript);
 
