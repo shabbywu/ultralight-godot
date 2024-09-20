@@ -148,7 +148,7 @@ class UltralightView : public TextureRect {
         auto size = get_size();
         if (size.width > 0 && size.height > 0) {
             auto result = renderer->createView(size.width, size.height, cfg, nullptr);
-            view = result.View;
+            view = result.view;
             if (!html.is_empty()) {
                 auto utf32 = html.utf32();
                 ultralight::String32 content(utf32.get_data(), utf32.length());
