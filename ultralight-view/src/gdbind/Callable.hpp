@@ -1,9 +1,9 @@
 #pragma once
+#include "cast.hpp"
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/callable.hpp>
+#include <memory>
 #include <ulbind17/ulbind17.hpp>
-
-#include "cast.hpp"
 
 namespace gdbind {
 class godot_callbale : public ulbind17::detail::generic_function {
@@ -97,7 +97,7 @@ class godot_callbale : public ulbind17::detail::generic_function {
 
 class NativeFunction : public ulbind17::detail::NativeFunction<Callable> {
   protected:
-    using Holder = ulbind17::detail::Holder<JSObjectRef>;
+    using Holder = ulbind17::detail::JSHolder<JSObjectRef>;
     std::shared_ptr<Holder> holder;
 
   public:
