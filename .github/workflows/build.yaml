@@ -37,6 +37,14 @@ jobs:
           env:
             CC:   gcc-13
             CXX:  g++-13
+        - name: 🍎 Build (MacOS, Clang, CMake) - Debug
+          preset: macos-x64-debug
+          os: macos-latest
+          env: {}
+        - name: 🍎 Build (MacOS, Clang, CMake) - Release
+          preset: macos-x64-release
+          os: macos-latest
+          env: {}
   
     steps:
       - name: Checkout
