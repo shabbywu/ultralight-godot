@@ -1,7 +1,6 @@
-[gd_scene load_steps=4 format=3 uid="uid://1qtx5c30xgb6"]
+[gd_scene load_steps=3 format=3 uid="uid://1qtx5c30xgb6"]
 
 [ext_resource type="Script" path="res://Main.cs" id="1_hmcr1"]
-[ext_resource type="Script" path="res://GodotButton.cs" id="2_pccpy"]
 
 [sub_resource type="ImageTexture" id="ImageTexture_ruw6d"]
 
@@ -17,7 +16,6 @@ mouse_force_pass_scroll_events = false
 mouse_default_cursor_shape = 3
 theme_override_colors/font_hover_color = Color(0.773848, 5.32807e-05, 2.84934e-05, 1)
 text = "Godot Button"
-script = ExtResource("2_pccpy")
 
 [node name="LabelA" type="Label" parent="."]
 offset_left = 488.0
