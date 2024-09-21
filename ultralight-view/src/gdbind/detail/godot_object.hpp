@@ -9,17 +9,6 @@ namespace gdbind {
 class DBBaseClass {};
 
 class GodotObject : public ulbind17::detail::Class<godot::Object> {
-  protected:
-    struct GodotObjectHolder {
-        godot::Object *instance;
-    };
-
-  public:
-    virtual JSObjectRef makeInstance(JSContextRef ctx, void *self) override {
-        godot::UtilityFunctions::print("on makeInstance ", defined);
-        return JSObjectMake(ctx, holder->value, self);
-    }
-
   public:
     virtual JSValueRef getProperty(JSContextRef ctx, JSObjectRef object, std::string propertyName,
                                    JSValueRef *exception) override {

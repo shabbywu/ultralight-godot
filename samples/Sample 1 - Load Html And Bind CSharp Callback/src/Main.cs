@@ -4,24 +4,30 @@ using Godot.NativeInterop;
 
 namespace demo;
 
-public partial class Main : Node2D
-{
-	public int A = 1;
-	
-	private TextureRect View { get; set; }
-	
-	// Called when the node enters the scene tree for the first time.
-	public override void _Ready()
-	{
-		View = GetNode<TextureRect>("View");
-		View.Connect("on_window_object_ready", new Callable(this, "OnWindowObjectReady"));
-		
-		// Load html, code base on https://www.w3schools.com/css/tryit.asp?filename=trycss_buttons_hover
-		View.Set("html", $@"
+public partial class Main : Node2D {
+    public int A = 1;
+
+    private TextureRect View { get; set; }
+    private Label LabelA { get; set; }
+
+    // Called when the node enters the scene tree for the first time.
+    public override void _Ready() {
+        View = GetNode<TextureRect>("View");
+        View.Connect("on_window_object_ready", new Callable(this, "OnWindowObjectReady"));
+        View.Connect("on_dom_ready", new Callable(this, "OnDomReady"));
+
+        LabelA = GetNode<Label>("LabelA");
+
+        // Load html, code base on https://www.w3schools.com/css/tryit.asp?filename=trycss_buttons_hover
+        View.Set("html", $@"
 <!DOCTYPE html>
 <html>
 <head>
 <style>
+html, body {{
+background-image: url(""data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkqAcAAIUAgUW0RjgAAAAASUVORK5CYII="");
+}}
+
 .button {{
   background-color: #04AA6D; /* Green */
   border: none;
@@ -37,8 +43,8 @@ public partial class Main : Node2D
 }}
 
 .button1 {{
-  background-color: white; 
-  color: black; 
+  background-color: white;
+  color: black;
   border: 2px solid #04AA6D;
 }}
 
@@ -48,8 +54,8 @@ public partial class Main : Node2D
 }}
 
 .button2 {{
-  background-color: white; 
-  color: black; 
+  background-color: white;
+  color: black;
   border: 2px solid #008CBA;
 }}
 
@@ -59,8 +65,8 @@ public partial class Main : Node2D
 }}
 
 .button3 {{
-  background-color: white; 
-  color: black; 
+  background-color: white;
+  color: black;
   border: 2px solid #f44336;
 }}
 
@@ -96,7 +102,7 @@ public partial class Main : Node2D
 <p>Use the :hover selector to change the style of the button when you move the mouse over it.</p>
 <p><strong>Tip:</strong> Use the transition-duration property to determine the speed of the ""hover"" effect:</p>
 
-<button class=""button button1"" onclick=""logInfo('invoke simple godot::Callbale')"">Green</button>
+<button class=""button button1"" onclick=""logInfo('invoke simple godot::Callbale'); return false;"">Green</button>
 <button class=""button button2"" onclick=""logInfo(Math.random())"">Blue</button>
 <button class=""button button3"" onclick=""logInfo(['convert js array to godot::Array', 1,2,3])"">Red</button>
 <button class=""button button4"" onclick=""logInfo({{case: 'convert js object to godot::Dictionary', complex: {{array: []}}}})"">Gray</button>
@@ -105,24 +111,24 @@ public partial class Main : Node2D
 </body>
 </html>
 ");
-	}
+    }
 
-	// Called every frame. 'delta' is the elapsed time since the previous frame.
-	public override void _Process(double delta)
-	{
+    // Called every frame. 'delta' is the elapsed time since the previous frame.
+    public override void _Process(double delta) {
+        LabelA.SetText($"A = {A}");
+    }
 
-	}
-	
-	public void LogInfo(Variant message)
-	{
-		GD.Print(message);
-	}
+    public void LogInfo(Variant message) {
+        GD.Print(message);
+    }
 
-	public void OnWindowObjectReady()
-	{
-		// bind function to window.logInfo
-		View.Call("bind_func", "logInfo", new Callable(this, "LogInfo"));
-		// bind object to window.main
-		View.Call("bind_object", "main", this);
-	}
+    public void OnWindowObjectReady() {
+        // bind function to window.logInfo
+        View.Call("bind_func", "logInfo", new Callable(this, "LogInfo"));
+        // bind object to window.main
+        View.Call("bind_object", "main", this);
+    }
+
+    public void OnDomReady() {
+    }
 }

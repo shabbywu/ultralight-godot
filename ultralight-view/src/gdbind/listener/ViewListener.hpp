@@ -24,6 +24,8 @@ struct ViewListener : public ultralight::ViewListener {
             godot::UtilityFunctions::print_rich(godot::String(message.message().utf8().data()));
         } else if (level == ultralight::MessageLevel::kMessageLevel_Info && logLevel <= LogLevel::INFO) {
             godot::UtilityFunctions::print(godot::String(message.message().utf8().data()));
+        } else if (level == ultralight::MessageLevel::kMessageLevel_Log && logLevel <= LogLevel::INFO) {
+            godot::UtilityFunctions::print(godot::String(message.message().utf8().data()));
         }
     }
 };

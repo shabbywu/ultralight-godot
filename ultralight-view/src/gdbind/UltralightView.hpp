@@ -34,6 +34,18 @@ class UltralightView : public TextureRect {
     GDCLASS(UltralightView, TextureRect);
 
   public:
+    UltralightView() : TextureRect() {
+        connect("resized", Callable(this, "on_resized"));
+        RenderingServer::get_singleton()->connect("frame_post_draw", Callable(this, "on_update_frame"));
+        set_material(bulitin_material());
+        set_expand_mode(ExpandMode::EXPAND_IGNORE_SIZE);
+    }
+
+    ~UltralightView() {
+        disconnect("resized", Callable(this, "on_resized"));
+        RenderingServer::get_singleton()->disconnect("frame_post_draw", Callable(this, "on_update_frame"));
+    }
+
     /// @brief Render this view to their godot texture
     ///
     /// You should call this once per frame (usually in synchrony with the monitor's refresh rate).
@@ -44,17 +56,6 @@ class UltralightView : public TextureRect {
             updateTexture(surface);
             surface->ClearDirtyBounds();
         }
-    }
-
-    UltralightView() : TextureRect() {
-        connect("resized", Callable(this, "on_resized"));
-        RenderingServer::get_singleton()->connect("frame_post_draw", Callable(this, "on_update_frame"));
-        set_material(bulitin_material());
-    }
-
-    ~UltralightView() {
-        disconnect("resized", Callable(this, "on_resized"));
-        RenderingServer::get_singleton()->disconnect("frame_post_draw", Callable(this, "on_update_frame"));
     }
 
 #pragma region godot texture property
@@ -68,10 +69,12 @@ class UltralightView : public TextureRect {
         if (image == nullptr) {
             image =
                 Image::create_from_data(surface->width(), surface->height(), false, Image::FORMAT_RGBA8, surface->data);
+            image->generate_mipmaps();
             texture = ImageTexture::create_from_image(image);
             set_texture(texture);
         } else {
             image->set_data(surface->width(), surface->height(), false, Image::FORMAT_RGBA8, surface->data);
+            image->generate_mipmaps();
             texture->update(image);
         }
     }
@@ -83,21 +86,21 @@ class UltralightView : public TextureRect {
         if (view.get() == nullptr)
             return;
         if (auto mouse_button = dynamic_cast<InputEventMouseButton *>(p_event.ptr()); mouse_button != nullptr) {
-            fire_mouse_event(mouse_button);
+            fireMouseEvent(mouse_button->get_position(), mouse_button->get_button_index(), mouse_button->is_pressed());
             accept_event();
         } else if (auto mouse_motion = dynamic_cast<InputEventMouseMotion *>(p_event.ptr()); mouse_motion != nullptr) {
-            fire_mouse_event(mouse_motion);
+            fireMouseEvent(mouse_motion->get_position(), MouseButton::MOUSE_BUTTON_NONE, mouse_motion->is_pressed());
             accept_event();
         }
     }
 
   protected:
-    void fire_mouse_event(InputEventMouseButton *mouse_button) {
+    void fireMouseEvent(godot::Vector2 position, MouseButton button_index, bool is_pressed) {
         MouseEvent evt;
-        evt.type = mouse_button->is_pressed() ? MouseEvent::kType_MouseDown : MouseEvent::kType_MouseUp;
-        evt.x = mouse_button->get_position().x;
-        evt.y = mouse_button->get_position().y;
-        switch (mouse_button->get_button_index()) {
+        evt.type = is_pressed ? MouseEvent::kType_MouseDown : MouseEvent::kType_MouseUp;
+        evt.x = position.x;
+        evt.y = position.y;
+        switch (button_index) {
         case MouseButton::MOUSE_BUTTON_LEFT:
             evt.button = MouseEvent::kButton_Left;
             break;
@@ -109,17 +112,9 @@ class UltralightView : public TextureRect {
             break;
         default:
             evt.button = MouseEvent::kButton_None;
+            evt.type = MouseEvent::kType_MouseMoved;
             break;
         }
-        view->FireMouseEvent(evt);
-    }
-
-    void fire_mouse_event(InputEventMouseMotion *mouse_motion) {
-        MouseEvent evt;
-        evt.type = MouseEvent::kType_MouseMoved;
-        evt.x = mouse_motion->get_position().x;
-        evt.y = mouse_motion->get_position().y;
-        evt.button = MouseEvent::kButton_None;
         view->FireMouseEvent(evt);
     }
 #pragma endregion
@@ -154,16 +149,18 @@ class UltralightView : public TextureRect {
                 auto utf32 = html.utf32();
                 ultralight::String32 content(utf32.get_data(), utf32.length());
                 view->LoadHTML(content);
-            } else if (htmlFile.is_valid()) {
-                auto utf32 = FileAccess::get_file_as_string(htmlFile->get_path()).utf32();
+            } else if (!htmlFile.is_empty()) {
+                auto utf32 = FileAccess::get_file_as_string(htmlFile).utf32();
                 ultralight::String32 content(utf32.get_data(), utf32.length());
                 view->LoadHTML(content);
             }
 
             result.loadListener->onWindowObjectReady = [this](ultralight::View *caller, uint64_t frame_id,
                                                               bool is_main_frame, const ultralight::String &url) {
-                { gdbind::GodotObject::defindJSClass(view->LockJSContext()->ctx()); }
-
+                {
+                    gdbind::GodotObject::defindJSClass(view->LockJSContext()->ctx());
+                    bindObject("__godot_view_instance", this);
+                }
                 emit_signal("on_window_object_ready");
             };
             result.loadListener->onDOMReady = [this](ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
@@ -219,7 +216,7 @@ void fragment(){
         window.set(propertyName.utf8().ptr(), std::move(Variant(instance)));
     }
 
-    auto executeScript(godot::String script) {
+    godot::Variant executeScript(godot::String script) {
         auto ctx = view->LockJSContext();
         return ulbind17::detail::Script(ctx->ctx(), script.utf8().ptr()).Evaluate<Variant>();
     }
@@ -232,7 +229,7 @@ void fragment(){
     godot::String html;
     void setHtmlContent(godot::String html) {
         this->html = html;
-        this->htmlFile.unref();
+        this->htmlFile = "";
         if (view.get() == nullptr)
             return;
         auto utf32 = html.utf32();
@@ -243,14 +240,16 @@ void fragment(){
         return html;
     }
     /// @brief html file to load
-    Ref<godot::Resource> htmlFile;
-    void setHtmlFile(Ref<godot::Resource> htmlFile) {
-        this->htmlFile = htmlFile;
-        this->html = "";
+    godot::String htmlFile;
+    void setHtmlFile(godot::String htmlFile) {
         if (view.get() == nullptr)
             return;
+        if (!FileAccess::file_exists(htmlFile))
+            return;
+        this->htmlFile = htmlFile;
+        this->html = "";
 
-        auto utf32 = FileAccess::get_file_as_string(htmlFile->get_path()).utf32();
+        auto utf32 = FileAccess::get_file_as_string(htmlFile).utf32();
         ultralight::String32 content(utf32.get_data(), utf32.length());
         view->LoadHTML(content);
     }
@@ -268,7 +267,7 @@ void fragment(){
 
         ClassDB::bind_method(D_METHOD("set_html_file", "htmlFile"), &UltralightView::setHtmlFile);
         ClassDB::bind_method(D_METHOD("get_html_file"), &UltralightView::getHtmlFile);
-        ADD_PROPERTY(PropertyInfo(Variant::RID, "htmlFile"), "set_html_file", "get_html_file");
+        ADD_PROPERTY(PropertyInfo(Variant::STRING, "htmlFile"), "set_html_file", "get_html_file");
 
         ClassDB::bind_method(D_METHOD("bind_func", "funcName", "callback"), &UltralightView::bindFunc);
         ClassDB::bind_method(D_METHOD("bind_object", "propertyName", "instance"), &UltralightView::bindObject);
