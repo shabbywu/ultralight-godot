@@ -24,6 +24,7 @@
 #include "gdbind/debug.hpp"
 #include "gdbind/detail/cast.hpp"
 #include "gdbind/detail/godot_callable.hpp"
+#include "gdbind/detail/godot_object.hpp"
 
 using namespace ultralight;
 using namespace godot;
@@ -161,6 +162,8 @@ class UltralightView : public TextureRect {
 
             result.loadListener->onWindowObjectReady = [this](ultralight::View *caller, uint64_t frame_id,
                                                               bool is_main_frame, const ultralight::String &url) {
+                { gdbind::GodotObject::defindJSClass(view->LockJSContext()->ctx()); }
+
                 emit_signal("on_window_object_ready");
             };
             result.loadListener->onDOMReady = [this](ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
@@ -208,6 +211,12 @@ void fragment(){
         auto ctx = view->LockJSContext();
         auto window = ulbind17::detail::Object::GetGlobalObject(ctx->ctx());
         window.set(funcName.utf8().ptr(), std::move(Variant(callback)));
+    }
+
+    void bindObject(godot::String propertyName, godot::Object *instance) {
+        auto ctx = view->LockJSContext();
+        auto window = ulbind17::detail::Object::GetGlobalObject(ctx->ctx());
+        window.set(propertyName.utf8().ptr(), std::move(Variant(instance)));
     }
 
     auto executeScript(godot::String script) {
@@ -262,6 +271,7 @@ void fragment(){
         ADD_PROPERTY(PropertyInfo(Variant::RID, "htmlFile"), "set_html_file", "get_html_file");
 
         ClassDB::bind_method(D_METHOD("bind_func", "funcName", "callback"), &UltralightView::bindFunc);
+        ClassDB::bind_method(D_METHOD("bind_object", "propertyName", "instance"), &UltralightView::bindObject);
         ClassDB::bind_method(D_METHOD("execute_script", "script"), &UltralightView::executeScript);
 
         // signal callback

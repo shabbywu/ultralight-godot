@@ -1,6 +1,7 @@
 #pragma once
 #include "cast__def.hpp"
 #include "godot_callable__def.hpp"
+#include "godot_object.hpp"
 #include "native_function.hpp"
 #include "ulbind17/ulbind17.hpp"
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -54,6 +55,10 @@ JSValueRef generic_cast(JSContextRef ctx, Variant value) {
         }
         return out.rawref();
     }
+    case Variant::Type::OBJECT: {
+        godot::Object *instance(value);
+        return generic_cast<godot::Object *, JSValueRef>(ctx, std::move(instance));
+    }
     default:
         break;
     }
@@ -85,7 +90,8 @@ Variant generic_cast(JSContextRef ctx, JSValueRef value) {
             Object o(ctx, JSValueToObject(ctx, value, nullptr));
             if (o.isFunction()) {
                 // godot does'not support dynamic function
-                UtilityFunctions::push_error("godot does'not support dynamic function, can't convert js function to godot callable");
+                UtilityFunctions::push_error(
+                    "godot does'not support dynamic function, can't convert js function to godot callable");
             } else {
                 godot::Dictionary out;
                 auto keys = o.keys();
