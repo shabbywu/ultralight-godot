@@ -67,6 +67,30 @@
 				"lhs": "${hostSystemName}",
 				"rhs": "Windows"
 			}
+		},
+		{
+			"name": "macos-x64-debug",
+			"inherits": "default",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug"
+			},
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Darwin"
+			}
+		},
+		{
+			"name": "macos-x64-release",
+			"inherits": "default",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release"
+			},
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Darwin"
+			}
 		}
 	],
 	"buildPresets": [
@@ -122,6 +146,28 @@
 				"type": "equals",
 				"lhs": "${hostSystemName}",
 				"rhs": "Windows"
+			}
+		},
+		{
+			"name": "macos-x64-debug",
+			"inherits": "default",
+			"configurePreset": "macos-x64-debug",
+			"configuration": "Debug",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Darwin"
+			}
+		},
+		{
+			"name": "macos-x64-release",
+			"inherits": "default",
+			"configurePreset": "macos-x64-release",
+			"configuration": "Release",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Darwin"
 			}
 		}
 	]

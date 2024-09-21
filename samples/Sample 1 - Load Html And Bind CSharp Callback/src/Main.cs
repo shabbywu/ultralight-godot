@@ -6,17 +6,17 @@ namespace demo;
 
 public partial class Main : Node2D
 {
-    [Export] public int A = 1;
-    
+	public int A = 1;
+	
 	private TextureRect View { get; set; }
 	
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
 		View = GetNode<TextureRect>("View");
-        View.Connect("on_window_object_ready", new Callable(this, "OnWindowObjectReady"));
-        
-        // Load html, code base on https://www.w3schools.com/css/tryit.asp?filename=trycss_buttons_hover
+		View.Connect("on_window_object_ready", new Callable(this, "OnWindowObjectReady"));
+		
+		// Load html, code base on https://www.w3schools.com/css/tryit.asp?filename=trycss_buttons_hover
 		View.Set("html", $@"
 <!DOCTYPE html>
 <html>
@@ -105,24 +105,24 @@ public partial class Main : Node2D
 </body>
 </html>
 ");
-    }
+	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
 
 	}
-    
+	
 	public void LogInfo(Variant message)
 	{
 		GD.Print(message);
 	}
 
-    public void OnWindowObjectReady()
-    {
-        // bind function to window.logInfo
-        View.Call("bind_func", "logInfo", new Callable(this, "LogInfo"));
-        // bind object to window.main
-        View.Call("bind_object", "main", this);
-    }
+	public void OnWindowObjectReady()
+	{
+		// bind function to window.logInfo
+		View.Call("bind_func", "logInfo", new Callable(this, "LogInfo"));
+		// bind object to window.main
+		View.Call("bind_object", "main", this);
+	}
 }

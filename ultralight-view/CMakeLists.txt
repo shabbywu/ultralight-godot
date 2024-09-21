@@ -55,7 +55,11 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 # string(REGEX REPLACE "/W[0-4]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 # endif()
 else()
-  set(GODOT_LINKER_FLAGS "-static-libgcc -static-libstdc++ -Wl,-R,'$$ORIGIN'")
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(GODOT_LINKER_FLAGS "-static-libgcc -static-libstdc++ -Wl,-R,'$$ORIGIN'")
+  else()
+    set(GODOT_LINKER_FLAGS "-framework Cocoa -Wl,-undefined,dynamic_lookup")
+  endif()
 
   set(GODOT_COMPILE_FLAGS "-fPIC -g -Wwrite-strings")
 
