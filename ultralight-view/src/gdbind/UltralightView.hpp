@@ -78,6 +78,39 @@ class UltralightView : public TextureRect {
             texture->update(image);
         }
     }
+
+    void initView() {
+        auto size = get_size();
+        auto renderer = UltralightSingleton::get_singleton()->getRender();
+        ViewConfig cfg;
+        cfg.is_accelerated = false;
+        cfg.is_transparent = is_transparent;
+        if (size.width > 0 && size.height > 0) {
+            auto result = renderer->createView(size.width, size.height, cfg, nullptr);
+            view = result.view;
+            if (!html.is_empty()) {
+                auto utf32 = html.utf32();
+                ultralight::String32 content(utf32.get_data(), utf32.length());
+                view->LoadHTML(content);
+            } else if (!htmlFile.is_empty()) {
+                auto utf32 = FileAccess::get_file_as_string(htmlFile).utf32();
+                ultralight::String32 content(utf32.get_data(), utf32.length());
+                view->LoadHTML(content);
+            }
+
+            result.loadListener->onWindowObjectReady = [this](ultralight::View *caller, uint64_t frame_id,
+                                                              bool is_main_frame, const ultralight::String &url) {
+                {
+                    gdbind::GodotObject::defindJSClass(view->LockJSContext()->ctx());
+                    bindObject("__godot_view_instance", this);
+                }
+                emit_signal("on_window_object_ready");
+            };
+            result.loadListener->onDOMReady = [this](ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
+                                                     const ultralight::String &url) { emit_signal("on_dom_ready"); };
+        }
+    }
+
 #pragma endregion
 
 #pragma region godot input handler
@@ -137,36 +170,7 @@ class UltralightView : public TextureRect {
     virtual void _ready() override {
         if (view.get() != nullptr)
             return;
-
-        auto renderer = UltralightSingleton::get_singleton()->getRender();
-        ViewConfig cfg;
-        cfg.is_accelerated = false;
-        cfg.is_transparent = is_transparent;
-        auto size = get_size();
-        if (size.width > 0 && size.height > 0) {
-            auto result = renderer->createView(size.width, size.height, cfg, nullptr);
-            view = result.view;
-            if (!html.is_empty()) {
-                auto utf32 = html.utf32();
-                ultralight::String32 content(utf32.get_data(), utf32.length());
-                view->LoadHTML(content);
-            } else if (!htmlFile.is_empty()) {
-                auto utf32 = FileAccess::get_file_as_string(htmlFile).utf32();
-                ultralight::String32 content(utf32.get_data(), utf32.length());
-                view->LoadHTML(content);
-            }
-
-            result.loadListener->onWindowObjectReady = [this](ultralight::View *caller, uint64_t frame_id,
-                                                              bool is_main_frame, const ultralight::String &url) {
-                {
-                    gdbind::GodotObject::defindJSClass(view->LockJSContext()->ctx());
-                    bindObject("__godot_view_instance", this);
-                }
-                emit_signal("on_window_object_ready");
-            };
-            result.loadListener->onDOMReady = [this](ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
-                                                     const ultralight::String &url) { emit_signal("on_dom_ready"); };
-        }
+        initView();
     }
 #pragma endregion
 
@@ -283,6 +287,7 @@ void fragment(){
         ClassDB::bind_method(D_METHOD("get_transparent"), &UltralightView::getTransparent);
         ADD_PROPERTY(PropertyInfo(Variant::BOOL, "transparent"), "set_transparent", "get_transparent");
 
+        ClassDB::bind_method(D_METHOD("init_view"), &UltralightView::initView);
         ClassDB::bind_method(D_METHOD("bind_func", "funcName", "callback"), &UltralightView::bindFunc);
         ClassDB::bind_method(D_METHOD("bind_object", "propertyName", "instance"), &UltralightView::bindObject);
         ClassDB::bind_method(D_METHOD("execute_script", "script"), &UltralightView::executeScript);
