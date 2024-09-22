@@ -7,9 +7,10 @@
         A singleton object to control ultralight renderer.
 
         You can get this UltralightSingleton by
-        ```csharp
+
+        [codeblocks]
         Variant UltralightSingleton = Engine.Singleton.GetSingleton("UltralightSingleton");
-        ```
+        [/codeblocks]
     </description>
     <tutorials>
     </tutorials>

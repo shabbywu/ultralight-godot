@@ -61,21 +61,21 @@
             <param index="0" name="funcName" type="String" />
             <param index="0" name="callback" type="Callable" />
             <description>
-                Bind godot::Callble to javascript global object(aka, window).
-                After bind_func, you can access the func via below javascript.
-                ```js
-                `window.${funcName}`(...)
+                Bind [i]Callble[/i] to javascript global object(aka, window).
+                After [b]bind_func[/b], you can access the func via below javascript.
+                [codeblocks]
+                [b]window.${funcName}[/b](...)
                 // window is optional
-                `${funcName}`(...)
-                ```
+                [b]${funcName}[/b](...)
+                [/codeblocks]
 
-                Those function params will be convert to godot::Variant, The type conversion table is as follows
-                - Undefined, NULL == godot::Nil
-                - Boolean == bool
-                - Number == double
-                - String == godot::String
-                - Array == godot::Array
-                - Object == godot::Dictionary
+                Those function params will be convert to [i]Variant[/i], The type conversion table is as follows
+                - Undefined, NULL => [i]Nil[/i]
+                - Boolean => [i]bool[/i]
+                - Number => [i]double[/i]
+                - String => [i]String[/i]
+                - Array => [i]Array[/i]
+                - Object => [i]Dictionary[/i]
             </description>
         </method>
         <method name="bind_object">
@@ -83,13 +83,14 @@
             <param index="0" name="propertyName" type="String" />
             <param index="0" name="instance" type="Object" />
             <description>
-                Bind godot::Object to javascript global object(aka, window).
-                After bind_object, you can access the godot::Object via below javascript.
-                ```js
-                `window.${propertyName}`
+                Bind [i]Object[/i] to javascript global object(aka, window).
+                After [b]bind_object[/b], you can access the [i]Object[/i] via below javascript.
+
+                [codeblocks]
+                [b]window.${propertyName}[/b](...)
                 // window is optional
-                `${propertyName}`(...)
-                ```
+                [b]${propertyName}[/b](...)
+                [/codeblocks]
             </description>
         </method>
         <method name="execute_script">

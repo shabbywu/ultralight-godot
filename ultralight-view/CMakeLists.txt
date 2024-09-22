@@ -41,19 +41,19 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   else()
     set(GODOT_COMPILE_FLAGS "${GODOT_COMPILE_FLAGS} /MD /O2") # /Oy /GL /Gy
     string(REGEX REPLACE "/RTC(su|[1su])" "" CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS}")
+                         "${CMAKE_CXX_FLAGS}")
     string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
   endif(CMAKE_BUILD_TYPE MATCHES Debug)
 
   # Disable conversion warning, truncation, unreferenced var, signed mismatch
   set(GODOT_COMPILE_FLAGS
-    "${GODOT_COMPILE_FLAGS} /wd4244 /wd4305 /wd4101 /wd4018 /wd4267")
+      "${GODOT_COMPILE_FLAGS} /wd4244 /wd4305 /wd4101 /wd4018 /wd4267")
 
   add_definitions(-DNOMINMAX)
 
-# Unkomment for warning level 4 if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
-# string(REGEX REPLACE "/W[0-4]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-# endif()
+  # Unkomment for warning level 4 if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+  # string(REGEX REPLACE "/W[0-4]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  # endif()
 else()
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(GODOT_LINKER_FLAGS "-static-libgcc -static-libstdc++ -Wl,-R,'$$ORIGIN'")
@@ -65,7 +65,7 @@ else()
 
   if(CMAKE_BUILD_TYPE MATCHES Debug)
     set(GODOT_COMPILE_FLAGS
-      "${GODOT_COMPILE_FLAGS} -fno-omit-frame-pointer -O0")
+        "${GODOT_COMPILE_FLAGS} -fno-omit-frame-pointer -O0")
   else()
     set(GODOT_COMPILE_FLAGS "${GODOT_COMPILE_FLAGS} -O3")
   endif(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -87,6 +87,22 @@ else()
   endif()
 endif()
 
+# Generate source from the docs file
+find_package(Python3 3.4 REQUIRED) # pathlib should be present
+if(GENERATE_TEMPLATE_GET_NODE)
+  set(GENERATE_BINDING_PARAMETERS "True")
+else()
+  set(GENERATE_BINDING_PARAMETERS "False")
+endif()
+
+execute_process(
+  COMMAND
+    "${Python3_EXECUTABLE}"
+    "${CMAKE_CURRENT_LIST_DIR}/doc_classes/make_doc_source.py"
+    "${CMAKE_CURRENT_LIST_DIR}/src/doc_data_registration.hpp"
+    "${CMAKE_CURRENT_LIST_DIR}/doc_classes"
+  WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+
 # Get Sources
 file(GLOB_RECURSE SOURCES src/*.c**)
 file(GLOB_RECURSE HEADERS include/*.h**)
@@ -97,9 +113,7 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
 target_include_directories(
   ${PROJECT_NAME} SYSTEM
   PRIVATE ${CPP_BINDINGS_PATH}/include ${CPP_BINDINGS_PATH}/gen/include
-  ${GODOT_GDEXTENSION_DIR}
-  ${CMAKE_CURRENT_LIST_DIR}/src
-)
+          ${GODOT_GDEXTENSION_DIR} ${CMAKE_CURRENT_LIST_DIR}/src)
 target_link_libraries(${PROJECT_NAME} godot-cpp ulbind17::ulbind17)
 
 # Create the correct name (godot.os.build_type.system_bits) Synchronized with
@@ -143,7 +157,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(GODOT_ARCHITECTURE_TYPE "unknown")
   endif()
 
-  set(OUTPUT_NAME ${PROJECT_NAME}.linux.${BUILD_TYPE}.${GODOT_ARCHITECTURE_TYPE})
+  set(OUTPUT_NAME
+      ${PROJECT_NAME}.linux.${BUILD_TYPE}.${GODOT_ARCHITECTURE_TYPE})
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "AMD64")
     set(GODOT_ARCHITECTURE_TYPE "x86_64")
@@ -151,17 +166,24 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(GODOT_ARCHITECTURE_TYPE "x86_32")
   endif()
 
-  set(OUTPUT_NAME ${PROJECT_NAME}.windows.${BUILD_TYPE}.${GODOT_ARCHITECTURE_TYPE})
+  set(OUTPUT_NAME
+      ${PROJECT_NAME}.windows.${BUILD_TYPE}.${GODOT_ARCHITECTURE_TYPE})
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(GODOT_ARCHITECTURE_TYPE ${CMAKE_OSX_ARCHITECTURES})
-  set(OUTPUT_NAME ${PROJECT_NAME}.macos.${BUILD_TYPE}.${GODOT_ARCHITECTURE_TYPE})
+  set(OUTPUT_NAME
+      ${PROJECT_NAME}.macos.${BUILD_TYPE}.${GODOT_ARCHITECTURE_TYPE})
 else()
   message(FATAL_ERROR "Not implemented support for ${CMAKE_SYSTEM_NAME}")
 endif()
 
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${OUTPUT_NAME} INSTALL_RPATH "@loader_path;" BUILD_WITH_INSTALL_RPATH TRUE)
+set_target_properties(
+  ${PROJECT_NAME}
+  PROPERTIES OUTPUT_NAME ${OUTPUT_NAME}
+             INSTALL_RPATH "@loader_path;"
+             BUILD_WITH_INSTALL_RPATH TRUE)
 
-install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/lib)
+install(TARGETS ${PROJECT_NAME}
+        DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/lib)
 
 # Copy all binaries to target directory
 get_target_property(ULTRALIGHT_BINARY_DIR ultralight-sdk ULTRALIGHT_BINARY_DIR)
@@ -169,4 +191,4 @@ add_custom_command(
   TARGET ${PROJECT_NAME}
   POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHT_BINARY_DIR}"
-  $<TARGET_FILE_DIR:${PROJECT_NAME}>)
+          $<TARGET_FILE_DIR:${PROJECT_NAME}>)

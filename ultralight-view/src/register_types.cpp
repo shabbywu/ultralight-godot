@@ -13,6 +13,7 @@
 
 #include "gdbind/detail/cast.hpp"
 
+#include "doc_data_registration.hpp"
 #include "gdbind/UltralightRenderer.hpp"
 #include "gdbind/UltralightSingleton.hpp"
 #include "gdbind/UltralightView.hpp"
