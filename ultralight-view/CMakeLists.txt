@@ -58,7 +58,7 @@ else()
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(GODOT_LINKER_FLAGS "-static-libgcc -static-libstdc++ -Wl,-R,'$$ORIGIN'")
   else()
-    set(GODOT_LINKER_FLAGS "-framework Cocoa -Wl,-undefined,dynamic_lookup")
+    set(GODOT_LINKER_FLAGS "-framework Cocoa -Wl,-undefined,'$$ORIGIN'")
   endif()
 
   set(GODOT_COMPILE_FLAGS "-fPIC -g -Wwrite-strings")
@@ -159,17 +159,14 @@ else()
   message(FATAL_ERROR "Not implemented support for ${CMAKE_SYSTEM_NAME}")
 endif()
 
-set_property(
-  TARGET ${PROJECT_NAME}
-  PROPERTY OUTPUT_NAME ${OUTPUT_NAME}
-)
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${OUTPUT_NAME} INSTALL_RPATH "@loader_path;" BUILD_WITH_INSTALL_RPATH TRUE)
 
-# if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-#   # Copy all binaries to target directory
-#   get_target_property(ULTRALIGHT_BINARY_DIR ultralight-sdk ULTRALIGHT_BINARY_DIR)
-#   add_custom_command(
-#     TARGET ${PROJECT_NAME}
-#     POST_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHT_BINARY_DIR}"
-#     $<TARGET_FILE_DIR:${PROJECT_NAME}>)
-# endif()
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/lib)
+
+# Copy all binaries to target directory
+get_target_property(ULTRALIGHT_BINARY_DIR ultralight-sdk ULTRALIGHT_BINARY_DIR)
+add_custom_command(
+  TARGET ${PROJECT_NAME}
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHT_BINARY_DIR}"
+  $<TARGET_FILE_DIR:${PROJECT_NAME}>)
