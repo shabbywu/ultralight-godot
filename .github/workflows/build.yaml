@@ -21,30 +21,54 @@ jobs:
           preset: windows-x64-debug
           os: windows-2022
           env: {}
+          artifact: windows-x64-debug
+          configurePresetAdditionalArgs: "[]"
         - name: 🏁 Build (Windows, MSVC, CMake) - Release
           preset: windows-x64-release
           os: windows-2022
           env: {}
+          artifact: windows-x64-release
+          configurePresetAdditionalArgs: "[]"
         - name: 🐧 Build (Linux, GCC, CMake) - Debug
           preset: linux-x64-debug
           os: ubuntu-24.04
           env:
             CC:   gcc-13
             CXX:  g++-13
+          artifact: linux-x64-debug
+          configurePresetAdditionalArgs: "[]"
         - name: 🐧 Build (Linux, GCC, CMake) - Release
           preset: linux-x64-release
           os: ubuntu-24.04
           env:
             CC:   gcc-13
             CXX:  g++-13
-        - name: 🍎 Build (MacOS, Clang, CMake) - Debug
+          artifact: linux-x64-release
+          configurePresetAdditionalArgs: "[]"
+        - name: 🍎 Build (MacOS, Clang, x86_64) - Debug
+          os: macos-latest
+          env: {}
           preset: macos-x64-debug
+          artifact: macos-x86_64-debug
+          configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"x86_64\"']"
+        - name: 🍎 Build (MacOS, Clang, arm64) - Debug
           os: macos-latest
           env: {}
-        - name: 🍎 Build (MacOS, Clang, CMake) - Release
+          preset: macos-x64-debug
+          artifact: macos-arm64-debug
+          configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"arm64\"']"
+        - name: 🍎 Build (MacOS, Clang, x86_64) - Release
+          os: macos-latest
+          env: {}
           preset: macos-x64-release
+          artifact: macos-x86_64-release
+          configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"x86_64\"']"
+        - name: 🍎 Build (MacOS, Clang, arm64) - Release
           os: macos-latest
           env: {}
+          preset: macos-x64-release
+          artifact: macos-arm64-release
+          configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"arm64\"']"
   
     steps:
       - name: Checkout
@@ -66,13 +90,14 @@ jobs:
         uses: lukka/run-cmake@v10
         with:
           configurePreset: ${{ matrix.preset }}
+          configurePresetAdditionalArgs: ${{ matrix.configurePresetAdditionalArgs }}
           buildPreset: ${{ matrix.preset }}
         env: ${{ matrix.env }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.preset }}.${{ github.ref_name }}
+          name: ${{ matrix.artifact }}.${{ github.ref_name }}
           path: bin
           retention-days: 14
 
