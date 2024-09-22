@@ -89,6 +89,7 @@ endif()
 
 # Generate source from the docs file
 find_package(Python3 3.4 REQUIRED) # pathlib should be present
+
 if(GENERATE_TEMPLATE_GET_NODE)
   set(GENERATE_BINDING_PARAMETERS "True")
 else()
@@ -186,9 +187,12 @@ install(TARGETS ${PROJECT_NAME}
         DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/lib)
 
 # Copy all binaries to target directory
-get_target_property(ULTRALIGHT_BINARY_DIR ultralight-sdk ULTRALIGHT_BINARY_DIR)
-add_custom_command(
-  TARGET ${PROJECT_NAME}
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHT_BINARY_DIR}"
-          $<TARGET_FILE_DIR:${PROJECT_NAME}>)
+if(COPY_ULTRALIGHT_BINARY)
+  get_target_property(ULTRALIGHT_BINARY_DIR ultralight-sdk
+                      ULTRALIGHT_BINARY_DIR)
+  add_custom_command(
+    TARGET ${PROJECT_NAME}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHT_BINARY_DIR}"
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>)
+endif(COPY_ULTRALIGHT_BINARY)
