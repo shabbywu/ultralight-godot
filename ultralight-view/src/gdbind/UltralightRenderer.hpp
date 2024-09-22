@@ -10,7 +10,7 @@ using namespace ultralight;
 using namespace godot;
 
 namespace gdbind {
-class UltralightRenderer {
+class UltralightRenderer final {
     struct CreateViewResult {
         ultralight::RefPtr<ultralight::View> view;
         ViewListener *viewListener;

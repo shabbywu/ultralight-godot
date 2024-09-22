@@ -80,6 +80,9 @@ class UltralightView : public TextureRect {
     }
 
     void initView() {
+        if (view.get() != nullptr) {
+            UtilityFunctions::push_warning("view is already created, will destroy previous view.");
+        }
         auto size = get_size();
         auto renderer = UltralightSingleton::get_singleton()->getRender();
         ViewConfig cfg;
@@ -149,18 +152,6 @@ class UltralightView : public TextureRect {
             break;
         }
         view->FireMouseEvent(evt);
-    }
-#pragma endregion
-
-#pragma region default godot perframe action
-  public:
-    // update per ticket
-    virtual void _process(double p_delta) {
-        if (view.get() == nullptr)
-            return;
-
-        auto ultralight = UltralightSingleton::get_singleton();
-        ultralight->updateLogic();
     }
 #pragma endregion
 
@@ -243,7 +234,6 @@ void fragment(){
     godot::String html;
     void setHtmlContent(godot::String html) {
         this->html = html;
-        this->htmlFile = "";
         if (view.get() == nullptr)
             return;
         auto utf32 = html.utf32();
@@ -261,11 +251,7 @@ void fragment(){
         if (!FileAccess::file_exists(htmlFile))
             return;
         this->htmlFile = htmlFile;
-        this->html = "";
-
-        auto utf32 = FileAccess::get_file_as_string(htmlFile).utf32();
-        ultralight::String32 content(utf32.get_data(), utf32.length());
-        view->LoadHTML(content);
+        setHtmlContent(FileAccess::get_file_as_string(htmlFile));
     }
     auto getHtmlFile() {
         return htmlFile;

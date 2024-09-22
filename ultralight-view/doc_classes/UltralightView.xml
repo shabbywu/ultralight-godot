@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="UltralightView" inherits="TextureRect" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+    <brief_description>
+        A TextureRect rendering Web-Content.
+    </brief_description>
+    <description>
+        A TextureRect in Godot, used to render ultralight view surface to Godot.
+    </description>
+    <tutorials>
+    </tutorials>
+    <methods>
+        <method name="set_html_content">
+            <return type="void" />
+            <param index="0" name="html" type="String" />
+            <description>
+                Set Html Content to show. will reload the view immediately
+            </description>
+        </method>
+        <method name="get_html_content">
+            <return type="String" />
+            <description>
+                Get Html Content showing.
+            </description>
+        </method>
+        <method name="set_html_file">
+            <return type="void" />
+            <param index="0" name="htmlFile" type="String" />
+            <description>
+                Set the html source from filesystem, example: "res://..."
+                If any exsits filepath in filesystem is set, will reload the view immediately.
+            </description>
+        </method>
+        <method name="get_html_file">
+            <return type="String" />
+            <description>
+                Get the path of html file.
+            </description>
+        </method>
+        <method name="set_transparent">
+            <return type="void" />
+            <param index="0" name="transparent" type="bool" />
+            <description>
+                Set whether or not this View should support transparency.
+                If view is already created, must call `initView` to reinit the view.
+            </description>
+        </method>
+        <method name="get_transparent">
+            <return type="bool" />
+            <description>
+                Get whether or not this View should support transparency.
+            </description>
+        </method>
+        <method name="init_view">
+            <return type="void" />
+            <description>
+                init the ultralight view.
+            </description>
+        </method>
+        <method name="bind_func">
+            <return type="void" />
+            <param index="0" name="funcName" type="String" />
+            <param index="0" name="callback" type="Callable" />
+            <description>
+                Bind godot::Callble to javascript global object(aka, window).
+                After bind_func, you can access the func via below javascript.
+                ```js
+                `window.${funcName}`(...)
+                // window is optional
+                `${funcName}`(...)
+                ```
+
+                Those function params will be convert to godot::Variant, The type conversion table is as follows
+                - Undefined, NULL == godot::Nil
+                - Boolean == bool
+                - Number == double
+                - String == godot::String
+                - Array == godot::Array
+                - Object == godot::Dictionary
+            </description>
+        </method>
+        <method name="bind_object">
+            <return type="void" />
+            <param index="0" name="propertyName" type="String" />
+            <param index="0" name="instance" type="Object" />
+            <description>
+                Bind godot::Object to javascript global object(aka, window).
+                After bind_object, you can access the godot::Object via below javascript.
+                ```js
+                `window.${propertyName}`
+                // window is optional
+                `${propertyName}`(...)
+                ```
+            </description>
+        </method>
+        <method name="execute_script">
+            <return type="Variant" />
+            <param index="0" name="script" type="String" />
+            <description>
+                Execute given javascript, return result from evaluating script, or NULL if an exception is thrown.
+            </description>
+        </method>
+    </methods>
+    <members>
+    </members>
+    <signals>
+        <signal name="on_window_object_ready">
+            <description>
+            Emit when the JavaScript window object is reset for a new page load.
+            </description>
+        </signal>
+        <signal name="on_dom_ready">
+            <description>
+            Emit when all JavaScript has been parsed and the document is ready.
+            </description>
+        </signal>
+    </signals>
+    <constants>
+    </constants>
+</class>

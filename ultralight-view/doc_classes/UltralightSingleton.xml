@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="UltralightSingleton" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+    <brief_description>
+        A singleton object to control ultralight renderer.
+    </brief_description>
+    <description>
+        A singleton object to control ultralight renderer.
+
+        You can get this UltralightSingleton by
+        ```csharp
+        Variant UltralightSingleton = Engine.Singleton.GetSingleton("UltralightSingleton");
+        ```
+    </description>
+    <tutorials>
+    </tutorials>
+    <methods>
+        <method name="update_logic">
+            <return type="void" />
+            <description>
+                Update timers and dispatch callbacks.
+
+                As default, UltralightSingleton will call update_logic automatelly when UltralightSingleton is processed by godot. If you want to control update_logic by your code, you can disable it by `UltralightSingleton.set_process(false)`.
+
+                If you disable default `_process`, you must call this as often as you can from your application's run loop.
+            </description>
+        </method>
+        <method name="update_frame">
+            <return type="void" />
+            <description>
+                [internal] DO NOT call this function manually, UltralightSingleton will automatelly register it to RenderingServer's `frame_pre_draw` signal.
+                Render all active views to their respective surfaces and render targets.
+            </description>
+        </method>
+        <method name="set_process">
+            <return type="void" />
+            <param index="0" name="process" type="bool" />
+            <description>
+                If set to true, enables processing per process_frame.
+            </description>
+        </method>
+    </methods>
+    <members>
+    </members>
+    <signals>
+    </signals>
+    <constants>
+    </constants>
+</class>
