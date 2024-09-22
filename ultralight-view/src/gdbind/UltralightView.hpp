@@ -141,6 +141,7 @@ class UltralightView : public TextureRect {
         auto renderer = UltralightSingleton::get_singleton()->getRender();
         ViewConfig cfg;
         cfg.is_accelerated = false;
+        cfg.is_transparent = is_transparent;
         auto size = get_size();
         if (size.width > 0 && size.height > 0) {
             auto result = renderer->createView(size.width, size.height, cfg, nullptr);
@@ -225,6 +226,15 @@ void fragment(){
 
 #pragma region ultralight property
   protected:
+    bool is_transparent;
+    void setTransparent(bool is_transparent) {
+        this->is_transparent = is_transparent;
+    }
+
+    bool getTransparent() {
+        return this->is_transparent;
+    }
+
     /// @brief html content to load
     godot::String html;
     void setHtmlContent(godot::String html) {
@@ -268,6 +278,10 @@ void fragment(){
         ClassDB::bind_method(D_METHOD("set_html_file", "htmlFile"), &UltralightView::setHtmlFile);
         ClassDB::bind_method(D_METHOD("get_html_file"), &UltralightView::getHtmlFile);
         ADD_PROPERTY(PropertyInfo(Variant::STRING, "htmlFile"), "set_html_file", "get_html_file");
+
+        ClassDB::bind_method(D_METHOD("set_transparent", "is_transparent"), &UltralightView::setTransparent);
+        ClassDB::bind_method(D_METHOD("get_transparent"), &UltralightView::getTransparent);
+        ADD_PROPERTY(PropertyInfo(Variant::BOOL, "transparent"), "set_transparent", "get_transparent");
 
         ClassDB::bind_method(D_METHOD("bind_func", "funcName", "callback"), &UltralightView::bindFunc);
         ClassDB::bind_method(D_METHOD("bind_object", "propertyName", "instance"), &UltralightView::bindObject);

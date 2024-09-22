@@ -24,10 +24,6 @@ public partial class Main : Node2D {
 <html>
 <head>
 <style>
-html, body {{
-background-image: url(""data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkqAcAAIUAgUW0RjgAAAAASUVORK5CYII="");
-}}
-
 .button {{
   background-color: #04AA6D; /* Green */
   border: none;
