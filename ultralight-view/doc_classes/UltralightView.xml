@@ -63,6 +63,7 @@
             <description>
                 Bind [i]Callble[/i] to javascript global object(aka, window).
                 After [b]bind_func[/b], you can access the func via below javascript.
+
                 [codeblocks]
                 [b]window.${funcName}[/b](...)
                 // window is optional
@@ -87,9 +88,9 @@
                 After [b]bind_object[/b], you can access the [i]Object[/i] via below javascript.
 
                 [codeblocks]
-                [b]window.${propertyName}[/b](...)
+                [b]window.${propertyName}[/b]
                 // window is optional
-                [b]${propertyName}[/b](...)
+                [b]${propertyName}[/b]
                 [/codeblocks]
             </description>
         </method>
