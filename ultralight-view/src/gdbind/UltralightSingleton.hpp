@@ -19,6 +19,8 @@ class UltralightSingleton : public Object {
         ClassDB::bind_method(D_METHOD("update_logic"), &UltralightSingleton::updateLogic);
         ClassDB::bind_method(D_METHOD("update_frame"), &UltralightSingleton::updateFrame);
         ClassDB::bind_method(D_METHOD("set_process", "process"), &UltralightSingleton::setProcess);
+        ClassDB::bind_method(D_METHOD("start_remove_inspector_server", "address", "port"),
+                             &UltralightSingleton::startRemoteInspectorServer);
     }
 
     // get_singleton from c++ side
@@ -76,7 +78,15 @@ class UltralightSingleton : public Object {
         UltralightRenderer::get_singleton()->updateFrame();
     }
 
-    UltralightRenderer *getRender() {
+    auto createView(uint32_t width, uint32_t height, const ViewConfig &config, RefPtr<Session> session) {
+        return UltralightRenderer::get_singleton()->createView(width, height, std::move(config), session);
+    }
+
+    bool startRemoteInspectorServer(godot::String address, unsigned int port) {
+        return UltralightRenderer::get_singleton()->startRemoteInspectorServer(address.utf8().ptr(), port);
+    }
+
+    auto getRender() {
         return UltralightRenderer::get_singleton();
     }
 

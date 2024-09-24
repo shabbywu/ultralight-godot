@@ -51,6 +51,8 @@ class UltralightView : public TextureRect {
     /// You should call this once per frame (usually in synchrony with the monitor's refresh rate).
     /// Must call after render.updateFrame()
     void updateFrame() {
+        if (view.get() == nullptr)
+            return;
         PackedByteArraySurface *surface = (PackedByteArraySurface *)(view->surface());
         if (!surface->dirty_bounds().IsEmpty()) {
             updateTexture(surface);
@@ -84,12 +86,11 @@ class UltralightView : public TextureRect {
             UtilityFunctions::push_warning("view is already created, will destroy previous view.");
         }
         auto size = get_size();
-        auto renderer = UltralightSingleton::get_singleton()->getRender();
         ViewConfig cfg;
         cfg.is_accelerated = false;
         cfg.is_transparent = is_transparent;
         if (size.width > 0 && size.height > 0) {
-            auto result = renderer->createView(size.width, size.height, cfg, nullptr);
+            auto result = UltralightSingleton::get_singleton()->createView(size.width, size.height, cfg, nullptr);
             view = result.view;
             if (!html.is_empty()) {
                 auto utf32 = html.utf32();
@@ -99,6 +100,10 @@ class UltralightView : public TextureRect {
                 auto utf32 = FileAccess::get_file_as_string(htmlFile).utf32();
                 ultralight::String32 content(utf32.get_data(), utf32.length());
                 view->LoadHTML(content);
+            } else if (!htmlUrl.is_empty()) {
+                auto utf32 = FileAccess::get_file_as_string(htmlUrl).utf32();
+                ultralight::String32 url(utf32.get_data(), utf32.length());
+                view->LoadURL(url);
             }
 
             result.loadListener->onWindowObjectReady = [this](ultralight::View *caller, uint64_t frame_id,
@@ -170,8 +175,10 @@ class UltralightView : public TextureRect {
     virtual void onResized() {
         auto size = get_size();
         image.unref();
-        view->Resize(size.width, size.height);
-        updateFrame();
+        if (view.get() != nullptr) {
+            view->Resize(size.width, size.height);
+            updateFrame();
+        }
     }
 #pragma endregion
 
@@ -243,18 +250,35 @@ void fragment(){
     auto getHtmlContent() {
         return html;
     }
+
     /// @brief html file to load
     godot::String htmlFile;
     void setHtmlFile(godot::String htmlFile) {
-        if (view.get() == nullptr)
-            return;
         if (!FileAccess::file_exists(htmlFile))
             return;
         this->htmlFile = htmlFile;
+        if (view.get() == nullptr)
+            return;
         setHtmlContent(FileAccess::get_file_as_string(htmlFile));
     }
     auto getHtmlFile() {
         return htmlFile;
+    }
+
+    /// @brief html url to load
+    godot::String htmlUrl;
+    void setHtmlUrl(godot::String htmlUrl) {
+        this->htmlUrl = htmlUrl;
+        if (view.get() == nullptr)
+            return;
+        if (htmlUrl.is_empty())
+            return;
+        auto utf32 = htmlUrl.utf32();
+        ultralight::String32 url(utf32.get_data(), utf32.length());
+        view->LoadURL(url);
+    }
+    auto getHtmlUrl() {
+        return htmlUrl;
     }
 
 #pragma endregion
@@ -268,6 +292,10 @@ void fragment(){
         ClassDB::bind_method(D_METHOD("set_html_file", "htmlFile"), &UltralightView::setHtmlFile);
         ClassDB::bind_method(D_METHOD("get_html_file"), &UltralightView::getHtmlFile);
         ADD_PROPERTY(PropertyInfo(Variant::STRING, "htmlFile"), "set_html_file", "get_html_file");
+
+        ClassDB::bind_method(D_METHOD("set_html_url", "htmlUrl"), &UltralightView::setHtmlUrl);
+        ClassDB::bind_method(D_METHOD("get_html_url"), &UltralightView::getHtmlUrl);
+        ADD_PROPERTY(PropertyInfo(Variant::STRING, "htmlUrl"), "set_html_url", "get_html_url");
 
         ClassDB::bind_method(D_METHOD("set_transparent", "is_transparent"), &UltralightView::setTransparent);
         ClassDB::bind_method(D_METHOD("get_transparent"), &UltralightView::getTransparent);

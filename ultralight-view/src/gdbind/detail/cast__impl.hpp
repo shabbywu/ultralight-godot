@@ -96,7 +96,7 @@ Variant generic_cast(JSContextRef ctx, JSValueRef value) {
                 godot::Dictionary out;
                 auto keys = o.keys();
                 for (auto key : keys) {
-                    out[godot::String(key.data())] = o.get<Variant>(key);
+                    out[key.data()] = o.get<Variant>(key);
                 }
                 return out;
             }

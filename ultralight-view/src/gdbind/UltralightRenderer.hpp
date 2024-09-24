@@ -1,6 +1,8 @@
 #pragma once
 
+#include "listener/DownloadListener.hpp"
 #include "listener/LoadListener.hpp"
+#include "listener/NetworkListener.hpp"
 #include "listener/ViewListener.hpp"
 #include <Ultralight/Ultralight.h>
 #include <memory>
@@ -71,7 +73,26 @@ class UltralightRenderer final {
         };
         view->set_view_listener(result.viewListener);
         view->set_load_listener(result.loadListener);
+        view->set_network_listener(new NetworkListener);
+        view->set_download_listener(new DownloadListener);
         return result;
+    }
+
+    ///
+    /// Start the remote inspector server.
+    ///
+    /// While the remote inspector is active, Views that are loaded into this renderer
+    /// will be able to be remotely inspected from another Ultralight instance either locally
+    /// (another app on same machine) or remotely (over the network) by navigating a View to:
+    ///
+    /// \code
+    ///   inspector://<ADDRESS>:<PORT>
+    /// \endcode
+    ///
+    /// @return  Returns whether the server started successfully or not.
+    ///
+    bool startRemoteInspectorServer(const char *address, uint16_t port) {
+        return render->StartRemoteInspectorServer(address, port);
     }
 };
 } // namespace gdbind
