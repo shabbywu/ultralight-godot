@@ -12,7 +12,6 @@ struct NetworkListener : public ultralight::NetworkListener {
     ///
     virtual bool OnNetworkRequest(ultralight::View *caller, ultralight::NetworkRequest &request) {
         godot::String url(request.url().utf8().data());
-        godot::UtilityFunctions::print("loading: ", url);
         return true;
     }
 };

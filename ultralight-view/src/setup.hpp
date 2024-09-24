@@ -12,7 +12,7 @@
 namespace gdbind {
 namespace setup {
 
-class EmbeddedResourceFileSystem : public GodotFileSystem {
+struct EmbeddedResourceFileSystem : public GodotFileSystem {
   public:
     virtual bool FileExists(const ultralight::String &file_path) override {
         std::string p = file_path.utf8().data();
@@ -61,7 +61,7 @@ static void setup_ultralight_platform() {
     platform.set_font_loader(new ulbind17::platform::MemoryFontLoader(
         {{font.getFileName(), ultralight::FontFile::Create(ultralight::Buffer::Create(
                                   (void *)font.getBuffer(), font.getSize(), nullptr, nullptr))}}));
-    platform.set_file_system(new EmbeddedResourceFileSystem());
+    platform.set_file_system(new gdbind::setup::EmbeddedResourceFileSystem());
 
     platform.set_logger(GodotLogger::instance());
     platform.set_surface_factory(new PackedByteArraySurfaceFactory());

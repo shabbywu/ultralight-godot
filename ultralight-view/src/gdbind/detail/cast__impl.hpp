@@ -4,6 +4,7 @@
 #include "godot_object.hpp"
 #include "native_function.hpp"
 #include "ulbind17/ulbind17.hpp"
+#include <godot_cpp/variant/callable_custom.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <string>
 
@@ -90,8 +91,8 @@ Variant generic_cast(JSContextRef ctx, JSValueRef value) {
             Object o(ctx, JSValueToObject(ctx, value, nullptr));
             if (o.isFunction()) {
                 // godot does'not support dynamic function
-                UtilityFunctions::push_error(
-                    "godot does'not support dynamic function, can't convert js function to godot callable");
+                // TODO: convert js function to CallableCustom
+                UtilityFunctions::push_error("TODO: convert js function to CallableCustom");
             } else {
                 godot::Dictionary out;
                 auto keys = o.keys();

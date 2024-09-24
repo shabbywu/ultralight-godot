@@ -20,7 +20,6 @@ struct DownloadListener : public ultralight::DownloadListener {
     /// You should return true to allow the download, or false to block the download.
     ///
     virtual bool OnRequestDownload(ultralight::View *caller, ultralight::DownloadId id, const ultralight::String &url) {
-        godot::UtilityFunctions::print("OnRequestDownload: ", godot::String(url.utf8().data()));
         return true;
     }
 

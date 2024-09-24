@@ -92,7 +92,9 @@ class UltralightRenderer final {
     /// @return  Returns whether the server started successfully or not.
     ///
     bool startRemoteInspectorServer(const char *address, uint16_t port) {
-        return render->StartRemoteInspectorServer(address, port);
+        auto result = render->StartRemoteInspectorServer(address, port);
+        godot::UtilityFunctions::print("StartRemoteInspectorServer at ", address, ":", port, " with result ", result);
+        return result;
     }
 };
 } // namespace gdbind
