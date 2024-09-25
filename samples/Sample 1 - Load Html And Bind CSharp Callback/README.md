@@ -7,5 +7,5 @@ Simple Example show hot to load html and bind csharp(or godot) function to ultra
 
 ## Features
 - [x] Rendering interactive html in godot.
-- [x] Bind csharp callbak to ultralight javascript context.
+- [x] Bind csharp callback to ultralight javascript context.
 - [x] Bind godot::Object to ultralight javascript context.
