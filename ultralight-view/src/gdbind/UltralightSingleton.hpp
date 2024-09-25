@@ -31,7 +31,6 @@ class UltralightSingleton : public Object {
 
   protected:
     bool inited = false;
-    std::thread daemon;
     void init() {
         if (!inited) {
             RenderingServer::get_singleton()->connect("frame_pre_draw", Callable(this, "update_frame"));
