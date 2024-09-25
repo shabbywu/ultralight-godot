@@ -23,7 +23,7 @@ class GodotFileSystem : public ultralight::FileSystem {
 
     virtual ultralight::RefPtr<ultralight::Buffer> OpenFile(const ultralight::String &file_path) override {
         static godot::String prefix = "res://";
-        godot::PackedByteArray data = godot::FileAccess::get_file_as_bytes(prefix + file_path.utf8().data());
+        auto data = godot::FileAccess::get_file_as_bytes(prefix + file_path.utf8().data());
         return ultralight::Buffer::CreateFromCopy(data.ptr(), data.size());
     }
 };

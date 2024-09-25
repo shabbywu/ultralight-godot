@@ -3,6 +3,7 @@
 #include <godot_cpp/variant/callable.hpp>
 #include <memory>
 #include <ulbind17/detail/function/cpp_function.hpp>
+#include <ulbind17/ulbind17.hpp>
 
 namespace gdbind {
 class godot_callable : public ulbind17::detail::generic_function {
@@ -31,6 +32,22 @@ class godot_callable : public ulbind17::detail::generic_function {
                              const JSValueRef arguments[], JSValueRef *exception) {
         auto h = (ulbind17::detail::PrivateDataHolder<godot_callable> *)JSObjectGetPrivate(function);
         return (**h).get_caller_impl()(ctx, function, thisObject, argumentCount, arguments, exception);
+    }
+};
+
+class NativeFunction : public ulbind17::detail::NativeFunction<godot::Callable> {
+  protected:
+    using Holder = ulbind17::detail::JSHolder<JSObjectRef>;
+    std::shared_ptr<Holder> holder;
+
+  public:
+    NativeFunction(JSContextRef ctx, std::shared_ptr<ulbind17::detail::generic_function> func)
+        : holder(std::make_shared<Holder>(ctx, make_instance(ctx, func))) {
+    }
+
+  public:
+    JSObjectRef rawref() const {
+        return holder->value;
     }
 };
 

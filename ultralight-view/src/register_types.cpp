@@ -17,6 +17,7 @@
 #include "gdbind/UltralightRenderer.hpp"
 #include "gdbind/UltralightSingleton.hpp"
 #include "gdbind/UltralightView.hpp"
+#include "gdbind/detail/js_callable_trampoline.hpp"
 #include "setup.hpp"
 
 using namespace godot;
@@ -28,6 +29,8 @@ static void initialize_module(ModuleInitializationLevel p_level) {
         GDREGISTER_CLASS(gdbind::UltralightSingleton);
         static gdbind::UltralightSingleton *singleton = memnew(gdbind::UltralightSingleton);
         godot::Engine::get_singleton()->register_singleton("UltralightSingleton", singleton);
+
+        GDREGISTER_CLASS(gdbind::JavascrtipCallableTrampoline);
     }
 }
 

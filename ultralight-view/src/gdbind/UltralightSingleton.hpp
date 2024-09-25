@@ -6,7 +6,6 @@
 #include <godot_cpp/classes/rendering_server.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
-#include <thread>
 using namespace ultralight;
 using namespace godot;
 

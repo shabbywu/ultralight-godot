@@ -2,9 +2,9 @@
 #include "cast__def.hpp"
 #include "godot_callable__def.hpp"
 #include "godot_object.hpp"
-#include "native_function.hpp"
+#include "js_callable.hpp"
+#include "js_callable_trampoline.hpp"
 #include "ulbind17/ulbind17.hpp"
-#include <godot_cpp/variant/callable_custom.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <string>
 
@@ -65,6 +65,7 @@ JSValueRef generic_cast(JSContextRef ctx, Variant value) {
     }
     return JSValueMakeNull(ctx);
 }
+
 Variant generic_cast(JSContextRef ctx, JSValueRef value) {
     switch (JSValueGetType(ctx, value)) {
     case JSType::kJSTypeUndefined:
@@ -90,9 +91,9 @@ Variant generic_cast(JSContextRef ctx, JSValueRef value) {
         } else {
             Object o(ctx, JSValueToObject(ctx, value, nullptr));
             if (o.isFunction()) {
-                // godot does'not support dynamic function
-                // TODO: convert js function to CallableCustom
-                UtilityFunctions::push_error("TODO: convert js function to CallableCustom");
+                auto out = memnew(gdbind::JavascrtipCallableTrampoline);
+                out->callable = new gdbind::JavascriptCallable(o);
+                return Callable(out, "trampoline");
             } else {
                 godot::Dictionary out;
                 auto keys = o.keys();

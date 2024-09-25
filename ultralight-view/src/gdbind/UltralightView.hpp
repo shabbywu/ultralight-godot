@@ -96,12 +96,8 @@ class UltralightView : public TextureRect {
                 auto utf32 = html.utf32();
                 ultralight::String32 content(utf32.get_data(), utf32.length());
                 view->LoadHTML(content);
-            } else if (!htmlFile.is_empty()) {
-                auto utf32 = FileAccess::get_file_as_string(htmlFile).utf32();
-                ultralight::String32 content(utf32.get_data(), utf32.length());
-                view->LoadHTML(content);
             } else if (!htmlUrl.is_empty()) {
-                auto utf32 = FileAccess::get_file_as_string(htmlUrl).utf32();
+                auto utf32 = htmlUrl.utf32();
                 ultralight::String32 url(utf32.get_data(), utf32.length());
                 view->LoadURL(url);
             }
@@ -251,20 +247,6 @@ void fragment(){
         return html;
     }
 
-    /// @brief html file to load
-    godot::String htmlFile;
-    void setHtmlFile(godot::String htmlFile) {
-        if (!FileAccess::file_exists(htmlFile))
-            return;
-        this->htmlFile = htmlFile;
-        if (view.get() == nullptr)
-            return;
-        setHtmlContent(FileAccess::get_file_as_string(htmlFile));
-    }
-    auto getHtmlFile() {
-        return htmlFile;
-    }
-
     /// @brief html url to load
     godot::String htmlUrl;
     void setHtmlUrl(godot::String htmlUrl) {
@@ -288,10 +270,6 @@ void fragment(){
         ClassDB::bind_method(D_METHOD("set_html_content", "html"), &UltralightView::setHtmlContent);
         ClassDB::bind_method(D_METHOD("get_html_content"), &UltralightView::getHtmlContent);
         ADD_PROPERTY(PropertyInfo(Variant::STRING, "html"), "set_html_content", "get_html_content");
-
-        ClassDB::bind_method(D_METHOD("set_html_file", "htmlFile"), &UltralightView::setHtmlFile);
-        ClassDB::bind_method(D_METHOD("get_html_file"), &UltralightView::getHtmlFile);
-        ADD_PROPERTY(PropertyInfo(Variant::STRING, "htmlFile"), "set_html_file", "get_html_file");
 
         ClassDB::bind_method(D_METHOD("set_html_url", "htmlUrl"), &UltralightView::setHtmlUrl);
         ClassDB::bind_method(D_METHOD("get_html_url"), &UltralightView::getHtmlUrl);
