@@ -119,7 +119,6 @@ jobs:
           merge-multiple: true
       - name: generate ultralight-view.gdextension
         run: |
-          mkdir -p artifacts/addons/ultralight-view/
           cat > artifacts/addons/ultralight-view/ultralight-view.gdextension <<EOF
           [configuration]
           entry_symbol = "ultralight_library_init"
