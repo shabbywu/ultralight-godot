@@ -98,7 +98,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}.${{ github.ref_name }}
-          path: bin/**/*@(.dll|.so|.dylib)
+          path: bin
           retention-days: 1
 
       # - name: Build test GDExtension library
@@ -119,6 +119,7 @@ jobs:
           merge-multiple: true
       - name: generate ultralight-view.gdextension
         run: |
+          mkdir -p artifacts/addons/ultralight-view/
           cat > artifacts/addons/ultralight-view/ultralight-view.gdextension <<EOF
           [configuration]
           entry_symbol = "ultralight_library_init"
