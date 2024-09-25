@@ -98,7 +98,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}.${{ github.ref_name }}
-          path: bin
+          path: bin/**/*@(.dll|.so|.dylib)
           retention-days: 1
 
       # - name: Build test GDExtension library
@@ -131,8 +131,8 @@ jobs:
           macos.release.arm64 = "bin/macos/libultralight-view.macos.release.arm64.dylib"
           windows.debug.x86_64 = "bin/win64/ultralight-view.windows.debug.x86_64.dll"
           windows.release.x86_64 = "bin/win64/ultralight-view.windows.release.x86_64.dll"
-          linux.debug.x86_64 = "bin/linux/libultralight-view.linux.debug.x86_64.so"
-          linux.release.x86_64 = "bin/linux/libultralight-view.linux.release.x86_64.so"
+          linux.debug.x86_64 = "bin/x11/libultralight-view.linux.debug.x86_64.so"
+          linux.release.x86_64 = "bin/x11/libultralight-view.linux.release.x86_64.so"
           EOF
       - name: Upload artifact
         uses: actions/upload-artifact@v4
