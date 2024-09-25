@@ -119,21 +119,21 @@ jobs:
           merge-multiple: true
       - name: generate ultralight-view.gdextension
         run: |
-        cat > artifacts/addons/ultralight-view/ultralight-view.gdextension <<EOF
-        [configuration]
-        entry_symbol = "ultralight_library_init"
-        compatibility_minimum = "4.3"
+          cat > artifacts/addons/ultralight-view/ultralight-view.gdextension <<EOF
+          [configuration]
+          entry_symbol = "ultralight_library_init"
+          compatibility_minimum = "4.3"
 
-        [libraries]
-        macos.debug.x86_64 = "bin/macos/libultralight-view.macos.debug.x86_64.dylib"
-        macos.release.x86_64 = "bin/macos/libultralight-view.macos.release.x86_64.dylib"
-        macos.debug.arm64 = "bin/macos/libultralight-view.macos.debug.arm64.dylib"
-        macos.release.arm64 = "bin/macos/libultralight-view.macos.release.arm64.dylib"
-        windows.debug.x86_64 = "bin/win64/ultralight-view.windows.debug.x86_64.dll"
-        windows.release.x86_64 = "bin/win64/ultralight-view.windows.release.x86_64.dll"
-        linux.debug.x86_64 = "bin/linux/libultralight-view.linux.debug.x86_64.so"
-        linux.release.x86_64 = "bin/linux/libultralight-view.linux.release.x86_64.so"
-        EOF
+          [libraries]
+          macos.debug.x86_64 = "bin/macos/libultralight-view.macos.debug.x86_64.dylib"
+          macos.release.x86_64 = "bin/macos/libultralight-view.macos.release.x86_64.dylib"
+          macos.debug.arm64 = "bin/macos/libultralight-view.macos.debug.arm64.dylib"
+          macos.release.arm64 = "bin/macos/libultralight-view.macos.release.arm64.dylib"
+          windows.debug.x86_64 = "bin/win64/ultralight-view.windows.debug.x86_64.dll"
+          windows.release.x86_64 = "bin/win64/ultralight-view.windows.release.x86_64.dll"
+          linux.debug.x86_64 = "bin/linux/libultralight-view.linux.debug.x86_64.so"
+          linux.release.x86_64 = "bin/linux/libultralight-view.linux.release.x86_64.so"
+          EOF
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
