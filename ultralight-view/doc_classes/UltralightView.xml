@@ -22,18 +22,18 @@
                 Get Html Content showing.
             </description>
         </method>
-        <method name="set_html_file">
+        <method name="set_html_url">
             <return type="void" />
-            <param index="0" name="htmlFile" type="String" />
+            <param index="0" name="htmlUrl" type="String" />
             <description>
-                Set the html source from filesystem, example: "res://..."
-                If any exsits filepath in filesystem is set, will reload the view immediately.
+                Set the html url source from filesystem, example: "res://..." or "https://www.baidu.com"
+                If any exsits url is set, will reload the view immediately.
             </description>
         </method>
-        <method name="get_html_file">
+        <method name="get_html_url">
             <return type="String" />
             <description>
-                Get the path of html file.
+                Get current html url.
             </description>
         </method>
         <method name="set_transparent">
@@ -77,6 +77,7 @@
                 - String => [i]String[/i]
                 - Array => [i]Array[/i]
                 - Object => [i]Dictionary[/i]
+                - Funciton => [i]Callable[/i]
             </description>
         </method>
         <method name="bind_object">
