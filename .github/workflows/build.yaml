@@ -106,8 +106,8 @@ jobs:
       #     cd test && cmake -DCMAKE_BUILD_TYPE=Release -DGODOT_HEADERS_PATH="../godot-headers" -DCPP_BINDINGS_PATH=".." -G"Visual Studio 16 2019" .
       #     cmake --build . --verbose
 
-  archive: Archive all prebuilt library
-    name: ${{ matrix.name }}
+  archive: 
+    name: Archive all prebuilt library
     runs-on: ubuntu-24.04
     steps:
       - name: Download artifact
