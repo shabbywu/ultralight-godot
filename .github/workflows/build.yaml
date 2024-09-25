@@ -109,6 +109,8 @@ jobs:
   archive: 
     name: Archive all prebuilt library
     runs-on: ubuntu-24.04
+    needs:
+    - cmake
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
