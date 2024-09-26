@@ -1,9 +1,9 @@
 # ultralight-godot
-Display Web-Content in Godot.
+Display Web-Content in Godot. You can use html/css/javascript as like godot native part.
 
 ## Features
 - [x] Render html in godot.
-- [x] Support mainstream operating systems Windows(x86_64 is tested)/Macos(x86_64 is tested)/Linux (untested)
+- [x] Support mainstream OS: Windows(x86_64 is tested)/Macos(x86_64 is tested)/Linux (untested)
 - [x] Use CSS to control styles, which is easier to use and controllable than Godot's native UI
 - [x] Execute Javascript from csharp/gdscript.
 - [x] Bind csharp/gdscript callback to ultralight javascript context.
