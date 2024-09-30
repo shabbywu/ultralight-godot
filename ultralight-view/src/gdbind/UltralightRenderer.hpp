@@ -30,7 +30,15 @@ class UltralightRenderer final {
   public:
     static UltralightRenderer *get_singleton() {
         static UltralightRenderer instance;
+        // re-create render after shutdown()
+        if (instance.render.get() == nullptr) {
+            instance.render = ultralight::Renderer::Create();
+        }
         return &instance;
+    }
+
+    void shutdown() {
+        render = nullptr;
     }
 
   public:

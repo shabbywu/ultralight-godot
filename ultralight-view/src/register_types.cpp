@@ -14,6 +14,7 @@
 #include "gdbind/detail/cast.hpp"
 
 #include "doc_data_registration.hpp"
+#include "gdbind/Shader.hpp"
 #include "gdbind/UltralightRenderer.hpp"
 #include "gdbind/UltralightSingleton.hpp"
 #include "gdbind/UltralightView.hpp"
@@ -35,6 +36,13 @@ static void initialize_module(ModuleInitializationLevel p_level) {
 }
 
 static void uninitialize_module(ModuleInitializationLevel p_level) {
+    if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+        gdbind::JavascrtipCallableTrampoline::freeInstances();
+        auto singleton = gdbind::UltralightSingleton::get_singleton();
+        godot::Engine::get_singleton()->unregister_singleton("UltralightSingleton");
+        singleton->shutdown();
+        godot::memdelete(singleton);
+    }
 }
 
 extern "C" {

@@ -18,4 +18,5 @@ public partial class Inventory: GodotObject
     {
         AddItemCallback.Call(item);
     }
+
 }

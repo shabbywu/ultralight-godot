@@ -10,6 +10,11 @@ class DBBaseClass {};
 
 class GodotObject : public ulbind17::detail::Class<godot::Object> {
   public:
+    virtual JSObjectRef makeInstance(JSContextRef ctx, void *self) override {
+        auto obj = (godot::Object *)self;
+        return JSObjectMake(ctx, holder->value, self);
+    }
+
     virtual JSValueRef getProperty(JSContextRef ctx, JSObjectRef object, std::string propertyName,
                                    JSValueRef *exception) override {
         auto instance = (godot::Object *)JSObjectGetPrivate(object);
@@ -25,6 +30,10 @@ class GodotObject : public ulbind17::detail::Class<godot::Object> {
         instance->set(gd_propertyName,
                       ulbind17::detail::generic_cast<JSValueRef, godot::Variant>(ctx, std::forward<JSValueRef>(value)));
         return true;
+    }
+
+    virtual void finalizeInstance(JSObjectRef object) override {
+        auto p = (godot::Object *)JSObjectGetPrivate(object);
     }
 
   public:

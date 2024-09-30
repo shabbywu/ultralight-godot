@@ -91,8 +91,7 @@ Variant generic_cast(JSContextRef ctx, JSValueRef value) {
         } else {
             Object o(ctx, JSValueToObject(ctx, value, nullptr));
             if (o.isFunction()) {
-                auto out = memnew(gdbind::JavascrtipCallableTrampoline);
-                out->callable = new gdbind::JavascriptCallable(o);
+                auto out = gdbind::JavascrtipCallableTrampoline::instantiate(o);
                 return Callable(out, "trampoline");
             } else {
                 godot::Dictionary out;

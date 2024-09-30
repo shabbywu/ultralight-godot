@@ -14,7 +14,10 @@ public partial class Main : Node2D {
     public override void _Ready() {
         View = GetNode<TextureRect>("View");
         View.Connect("on_window_object_ready", new Callable(this, "OnWindowObjectReady"));
-        View.Connect("on_dom_ready", new Callable(this, "OnDomReady"));
+        View.Connect("on_dom_ready", Callable.From(() =>
+        {
+          GD.Print("on dom ready");
+        }));
 
         LabelA = GetNode<Label>("LabelA");
 
@@ -123,8 +126,5 @@ public partial class Main : Node2D {
         View.Call("bind_func", "logInfo", new Callable(this, "LogInfo"));
         // bind object to window.main
         View.Call("bind_object", "main", this);
-    }
-
-    public void OnDomReady() {
     }
 }

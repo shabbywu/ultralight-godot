@@ -9,7 +9,6 @@
 #include <godot_cpp/classes/input_event_mouse_button.hpp>
 #include <godot_cpp/classes/input_event_mouse_motion.hpp>
 #include <godot_cpp/classes/rendering_server.hpp>
-#include <godot_cpp/classes/shader_material.hpp>
 #include <godot_cpp/classes/texture_rect.hpp>
 
 #include <godot_cpp/core/binder_common.hpp>
@@ -20,6 +19,7 @@
 #include <ulbind17/ulbind17.hpp>
 
 #include "gdbind/PackedByteArraySurface.hpp"
+#include "gdbind/Shader.hpp"
 #include "gdbind/UltralightSingleton.hpp"
 #include "gdbind/debug.hpp"
 #include "gdbind/detail/cast.hpp"
@@ -37,13 +37,15 @@ class UltralightView : public TextureRect {
     UltralightView() : TextureRect() {
         connect("resized", Callable(this, "on_resized"));
         RenderingServer::get_singleton()->connect("frame_post_draw", Callable(this, "on_update_frame"));
-        set_material(bulitin_material());
+        set_material(gdbind::Shader::bulitin_material());
         set_expand_mode(ExpandMode::EXPAND_IGNORE_SIZE);
     }
 
-    ~UltralightView() {
+    virtual ~UltralightView() override {
         disconnect("resized", Callable(this, "on_resized"));
         RenderingServer::get_singleton()->disconnect("frame_post_draw", Callable(this, "on_update_frame"));
+
+        view = nullptr;
     }
 
     /// @brief Render this view to their godot texture
@@ -175,29 +177,6 @@ class UltralightView : public TextureRect {
             view->Resize(size.width, size.height);
             updateFrame();
         }
-    }
-#pragma endregion
-
-#pragma region shader use to convert BGRA to RGBA
-  protected:
-    static ShaderMaterial *bulitin_material() {
-        static ShaderMaterial *material;
-        if (material == nullptr) {
-            material = memnew(ShaderMaterial);
-            static Shader *shader = memnew(Shader);
-            // convert BGRA(ultralight format) to RGBA(godot format)
-            shader->set_code(R"(
-shader_type canvas_item;
-
-void fragment(){
-  float b = COLOR.r;
-  COLOR.r = COLOR.b;
-  COLOR.b = b;
-}
-            )");
-            material->set_shader(shader);
-        }
-        return material;
     }
 #pragma endregion
 

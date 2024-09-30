@@ -14,6 +14,10 @@ class UltralightSingleton : public Object {
     GDCLASS(UltralightSingleton, Object);
 
   public:
+    virtual ~UltralightSingleton() {
+    }
+
+  public:
     static void _bind_methods() {
         ClassDB::bind_method(D_METHOD("update_logic"), &UltralightSingleton::updateLogic);
         ClassDB::bind_method(D_METHOD("update_frame"), &UltralightSingleton::updateFrame);
@@ -87,7 +91,11 @@ class UltralightSingleton : public Object {
     auto getRender() {
         return UltralightRenderer::get_singleton();
     }
-
 #pragma endregion
+
+  public:
+    void shutdown() {
+        UltralightRenderer::get_singleton()->shutdown();
+    }
 };
 } // namespace gdbind
