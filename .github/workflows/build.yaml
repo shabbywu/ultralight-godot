@@ -125,10 +125,10 @@ jobs:
           compatibility_minimum = "4.3"
 
           [libraries]
-          macos.debug.x86_64 = "bin/macos/libultralight-view.macos.debug.x86_64.dylib"
-          macos.release.x86_64 = "bin/macos/libultralight-view.macos.release.x86_64.dylib"
-          macos.debug.arm64 = "bin/macos/libultralight-view.macos.debug.arm64.dylib"
-          macos.release.arm64 = "bin/macos/libultralight-view.macos.release.arm64.dylib"
+          macos.debug.x86_64 = "bin/macos-x64/libultralight-view.macos.debug.x86_64.dylib"
+          macos.release.x86_64 = "bin/macos-x64/libultralight-view.macos.release.x86_64.dylib"
+          macos.debug.arm64 = "bin/macos-arm64/libultralight-view.macos.debug.arm64.dylib"
+          macos.release.arm64 = "bin/macos-arm64/libultralight-view.macos.release.arm64.dylib"
           windows.debug.x86_64 = "bin/win64/ultralight-view.windows.debug.x86_64.dll"
           windows.release.x86_64 = "bin/win64/ultralight-view.windows.release.x86_64.dll"
           linux.debug.x86_64 = "bin/x11/libultralight-view.linux.debug.x86_64.so"
