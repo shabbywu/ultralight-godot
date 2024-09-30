@@ -10,7 +10,6 @@ class JavascriptCallable : public godot::CallableCustom, public ulbind17::detail
     }
 
     virtual ~JavascriptCallable() {
-        UtilityFunctions::print("~JavascriptCallable");
     }
 
     virtual uint32_t hash() const override {

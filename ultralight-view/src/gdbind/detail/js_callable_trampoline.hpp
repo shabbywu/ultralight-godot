@@ -35,7 +35,6 @@ class JavascrtipCallableTrampoline : public godot::RefCounted {
     }
 
     virtual ~JavascrtipCallableTrampoline() {
-        UtilityFunctions::print("~JavascrtipCallableTrampoline");
         if (callable != nullptr) {
             delete callable;
         }
