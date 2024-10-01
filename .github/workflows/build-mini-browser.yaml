@@ -1,0 +1,112 @@
+name: Build Mini Browser
+on:
+  workflow_dispatch:
+
+env:
+  # Only used for the cache key. Increment version to force clean build.
+  GODOT_BASE_BRANCH: main
+
+concurrency:
+  group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}
+  cancel-in-progress: true
+
+jobs:
+  cmake:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+        - name: 🏁 Build (Windows, MSVC, x86_64)
+          os: windows-2022
+          artifact: windows-x64
+          env:
+            VCPKG_DEFAULT_TRIPLET: x64-windows
+          Debug_configurePresetAdditionalArgs: "['-DCMAKE_BUILD_TYPE=\"Debug\"']"
+          Debug_buildPresetAdditionalArgs: '[`--config Debug`]'
+          Release_configurePresetAdditionalArgs: "['-DCMAKE_BUILD_TYPE=\"Release\"']"
+          Release_buildPresetAdditionalArgs: '[`--config Release`]'
+        - name: 🐧 Build (Linux, GCC, x86_64)
+          os: ubuntu-24.04
+          artifact: linux-x64
+          env:
+            VCPKG_DEFAULT_TRIPLET: x64-linux
+            CC:   gcc-13
+            CXX:  g++-13
+          Release_configurePresetAdditionalArgs: "['-DCMAKE_BUILD_TYPE=\"Release\"']"
+          Release_buildPresetAdditionalArgs: '[`--config Release`, `--target mini-browser`]'
+        - name: 🍎 Build (MacOS, Clang, arm64)
+          os: macos-latest
+          artifact: macos-arm64
+          env:
+            VCPKG_DEFAULT_TRIPLET: arm64-osx
+          Release_configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"arm64\"', '-DCMAKE_BUILD_TYPE=\"Release\"']"
+          Release_buildPresetAdditionalArgs: '[`--config Release`, `--target mini-browser`]'
+        - name: 🍎 Build (MacOS, Clang, x86_64)
+          os: macos-latest
+          artifact: macos-x86_64
+          env:
+            VCPKG_DEFAULT_TRIPLET: x64-osx
+          Release_configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"x86_64\"', '-DCMAKE_BUILD_TYPE=\"Release\"']"
+          Release_buildPresetAdditionalArgs: '[`--config Release`, `--target mini-browser`]'
+
+    env: ${{ matrix.env }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.PRIVATE_TOKEN }}
+
+      # Install latest CMake and Ninja.
+      - uses: lukka/get-cmake@latest
+
+      # Setup vcpkg: ensures vcpkg is downloaded and built.
+      # Since vcpkg.json is being used later on to install the packages
+      # when `run-cmake` runs, no packages are installed at this time
+      # (and vcpkg does not run).
+      - name: Setup anew (or from cache) vcpkg (and does not build any package)
+        uses: lukka/run-vcpkg@v11 # Always specify the specific _version_ of the
+                                  # action you need, `v11` in this case to stay up
+                                  # to date with fixes on the v11 branch.
+        with:
+          vcpkgGitCommitId: 'd07689ef165f033de5c0710e4f67c193a85373e1'
+
+      - name: Install dependencies
+        if: ${{ matrix.os == 'ubuntu-24.04' }}
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qqq build-essential pkg-config gcc-13 g++-13
+
+      - name: Run CMake consuming CMakePreset.json (Release)
+        uses: lukka/run-cmake@v10
+        with:
+          configurePreset: default
+          configurePresetAdditionalArgs: ${{ matrix.Release_configurePresetAdditionalArgs }}
+          buildPreset: default
+          buildPresetAdditionalArgs: ${{ matrix.Release_buildPresetAdditionalArgs }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}.${{ github.ref_name }}
+          path: bin
+          retention-days: 1
+
+  archive:
+    name: Archive all prebuilt binary
+    runs-on: ubuntu-24.04
+    needs:
+    - cmake
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ultralight-view.${{ github.ref_name }}
+          path: artifacts
+          retention-days: 2

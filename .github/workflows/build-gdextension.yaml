@@ -1,4 +1,4 @@
-name: Build
+name: Build GDExtension
 on:
   workflow_dispatch:
 
