@@ -31,7 +31,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 file(GLOB SRC_FILES src/*.cpp gen/*.cpp)
-add_executable(mini-browser ${SRC_FILES})
+add_executable(mini-browser EXCLUDE_FROM_ALL ${SRC_FILES})
 target_link_libraries(
   mini-browser ultralight-sdk-fullstack ulbind17::ulbind17
   $<IF:$<TARGET_EXISTS:PhysFS::PhysFS>,PhysFS::PhysFS,PhysFS::PhysFS-static>)
