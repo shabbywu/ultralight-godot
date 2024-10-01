@@ -1,18 +1,10 @@
 vcpkg_check_linkage(ONLY_STATIC_LIBRARY)
 
 set(PATCHES "install.patch")
-vcpkg_check_features(
-  OUT_FEATURE_OPTIONS
-  GODOT_CPP_FEATURES
-  PREFIX
-  GODOT_CPP_FEATURE
-  FEATURES
-  static-cpp
-  STATIC_CPP)
 
-if(GODOT_CPP_FEATURE_STATIC_CPP)
+if(VCPKG_CRT_LINKAGE STREQUAL "static")
   set(PATCHES "static_cpp.patch" "${PATCHES}")
-endif(GODOT_CPP_FEATURE_STATIC_CPP)
+endif()
 
 vcpkg_from_github(
   OUT_SOURCE_PATH

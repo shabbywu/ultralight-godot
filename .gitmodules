@@ -1,6 +1,3 @@
-[submodule "externals/godot-cpp"]
-	path = externals/godot-cpp
-	url = https://github.com/godotengine/godot-cpp.git
 [submodule "externals/ulbind17"]
-	path = externals/ulbind17
-	url = https://github.com/shabbywu/ulbind17.git
+    path = externals/ulbind17
+    url = https://github.com/shabbywu/ulbind17.git
