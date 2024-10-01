@@ -5,7 +5,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     https://github.com/end2endzone/bin2cpp/releases/download/3.0.0/bin2cpp-3.0.0-centos-x86_64.tar.gz
     ${CMAKE_CURRENT_BINARY_DIR}/bin2cpp.tar.gz
     SHOW_PROGRESS
-    EXPECTED_MD5 a45bf06769302737a266129acf5e8c2f)
+    EXPECTED_MD5 6865e33dd02af483fcdcbf1ab6d53136)
   set(BIN2CPP_ARCHIVE_FILE ${CMAKE_CURRENT_BINARY_DIR}/bin2cpp.tar.gz)
   set(Bin2cpp_executable
       ${CMAKE_CURRENT_BINARY_DIR}/bin2cpp-3.0.0-centos-x86_64/bin/bin2cpp)
