@@ -36,3 +36,23 @@ target_link_libraries(
   mini-browser ultralight-sdk-fullstack ulbind17::ulbind17
   $<IF:$<TARGET_EXISTS:PhysFS::PhysFS>,PhysFS::PhysFS,PhysFS::PhysFS-static>)
 target_include_directories(mini-browser PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set(TARGET_PATH x11)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  set(TARGET_PATH win64)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+  if(CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
+    set(TARGET_PATH macos-x64)
+  elseif(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
+    set(TARGET_PATH macos-arm64)
+  else()
+    set(TARGET_PATH macos)
+  endif()
+else()
+  message(FATAL_ERROR "Not implemented support for ${CMAKE_SYSTEM_NAME}")
+endif()
+
+set_target_properties(
+  mini-browser PROPERTIES RUNTIME_OUTPUT_DIRECTORY
+                          ${CMAKE_SOURCE_DIR}/bin/mini-browser/${TARGET_PATH})

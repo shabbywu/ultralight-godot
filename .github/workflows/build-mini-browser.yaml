@@ -22,10 +22,8 @@ jobs:
           artifact: windows-x64
           env:
             VCPKG_DEFAULT_TRIPLET: x64-windows
-          Debug_configurePresetAdditionalArgs: "['-DCMAKE_BUILD_TYPE=\"Debug\"']"
-          Debug_buildPresetAdditionalArgs: '[`--config Debug`]'
           Release_configurePresetAdditionalArgs: "['-DCMAKE_BUILD_TYPE=\"Release\"']"
-          Release_buildPresetAdditionalArgs: '[`--config Release`]'
+          Release_buildPresetAdditionalArgs: '[`--config Release`, `--target mini-browser`]'
         - name: 🐧 Build (Linux, GCC, x86_64)
           os: ubuntu-24.04
           artifact: linux-x64
