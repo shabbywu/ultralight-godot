@@ -76,7 +76,7 @@ jobs:
                                   # action you need, `v11` in this case to stay up
                                   # to date with fixes on the v11 branch.
         with:
-          vcpkgJsonGlob: 'vcpkg.json'
+          vcpkgGitCommitId: 'd07689ef165f033de5c0710e4f67c193a85373e1'
 
       - name: Install dependencies
         if: ${{ matrix.os == 'ubuntu-24.04' }}
