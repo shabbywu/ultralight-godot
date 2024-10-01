@@ -75,6 +75,8 @@ jobs:
         uses: lukka/run-vcpkg@v11 # Always specify the specific _version_ of the
                                   # action you need, `v11` in this case to stay up
                                   # to date with fixes on the v11 branch.
+        with:
+          vcpkgJsonGlob: 'vcpkg.json'
 
       - name: Install dependencies
         if: ${{ matrix.os == 'ubuntu-24.04' }}
