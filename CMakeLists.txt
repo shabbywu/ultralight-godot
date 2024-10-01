@@ -7,3 +7,4 @@ target_link_libraries(ulbind17 INTERFACE ultralight-sdk)
 
 find_package(godot-cpp CONFIG REQUIRED)
 add_subdirectory(ultralight-view)
+add_subdirectory(mini-browser)

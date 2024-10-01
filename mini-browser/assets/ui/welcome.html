@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>MiniBrowser Welcome Page</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style type="text/css">
+    /* Basic Resets */
+    body, button, input, select, textarea {
+      font-family: BlinkMacSystemFont, -apple-system, 'Segoe UI', 'Roboto', 'Ubuntu', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Color scheme and layout */
+    body {
+      background-color: #ebf1ff;
+      color: #333;
+      display: flex;
+      justify-content: center; /* Center horizontally */
+      padding: 1em;
+    }
+
+    .container {
+      display: flex;
+      align-items: flex-start; /* Align items at the start inside the container */
+      flex-wrap: wrap; /* Wrap items when necessary */
+      width: 90%; /* Responsive width */
+      max-width: 800px; /* Maximum width */
+    }
+
+    section {
+      background-color: #fff;
+      padding: 20px;
+      margin: 10px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+      width: 100%; /* Responsive width */
+    }
+
+    h2.title {
+      color: #0077cc; /* Accent color for title */
+      padding: 0.5em 0.5em;
+    }
+
+    h3, h4 {
+      color: #333; /* Dark gray color for better readability */
+    }
+
+    h4 {
+      margin-top: 2em; /* Spacing before headers */
+    }
+
+    ul {
+      list-style-type: none; /* Remove default list style */
+      padding: 0;
+    }
+
+    pre {
+      background-color: #f3f7ff; /* Light gray background for <pre> tags */
+      padding: 10px;
+      border-radius: 4px;
+      overflow: auto; /* Adds scrollbar if needed */
+      color: #0077cc;
+    }
+
+    code {
+      color: #0077cc;
+    }
+
+    /* Interactive elements */
+    section:hover {
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2); /* Larger shadow on hover */
+      transition: box-shadow 0.3s ease-in-out;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2 class="title">UI Inspector</h2>
+    <section class="usage">
+      <h3>About</h3>
+      <p>UI Inspector can be used to inspect, and profile web-content using the Ultralight renderer.</p>
+
+      <h4>Remote Inspector</h4>
+      <p>
+        Remote Inspector can be accessed via:
+        <pre>    inspector://{host}:{port}</pre>
+      </p>
+    </section>
+  </div>
+</body>
+
+</html>
