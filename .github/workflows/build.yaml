@@ -17,59 +17,46 @@ jobs:
     strategy:
       matrix:
         include:
-        - name: 🏁 Build (Windows, MSVC, CMake) - Debug
-          preset: windows-x64-debug
+        - name: 🏁 Build (Windows, MSVC, x86_64)
           os: windows-2022
-          env: {}
-          artifact: windows-x64-debug
-          configurePresetAdditionalArgs: "[]"
-        - name: 🏁 Build (Windows, MSVC, CMake) - Release
-          preset: windows-x64-release
-          os: windows-2022
-          env: {}
-          artifact: windows-x64-release
-          configurePresetAdditionalArgs: "[]"
-        - name: 🐧 Build (Linux, GCC, CMake) - Debug
-          preset: linux-x64-debug
-          os: ubuntu-24.04
+          artifact: windows-x64
           env:
+            VCPKG_DEFAULT_TRIPLET: x64-windows
+          Debug_configurePresetAdditionalArgs: "['-DCMAKE_BUILD_TYPE=\"Debug\"']"
+          Debug_buildPresetAdditionalArgs: '[`--config Debug`]'
+          Release_configurePresetAdditionalArgs: "['-DCMAKE_BUILD_TYPE=\"Release\"']"
+          Release_buildPresetAdditionalArgs: '[`--config Release`]'
+        - name: 🐧 Build (Linux, GCC, x86_64)
+          os: ubuntu-24.04
+          artifact: linux-x64
+          env:
+            VCPKG_DEFAULT_TRIPLET: x64-linux
             CC:   gcc-13
             CXX:  g++-13
-          artifact: linux-x64-debug
-          configurePresetAdditionalArgs: "[]"
-        - name: 🐧 Build (Linux, GCC, CMake) - Release
-          preset: linux-x64-release
-          os: ubuntu-24.04
+          Debug_configurePresetAdditionalArgs: "['-DCMAKE_BUILD_TYPE=\"Debug\"']"
+          Debug_buildPresetAdditionalArgs: '[`--config Debug`]'
+          Release_configurePresetAdditionalArgs: "['-DCMAKE_BUILD_TYPE=\"Release\"']"
+          Release_buildPresetAdditionalArgs: '[`--config Release`]'
+        - name: 🍎 Build (MacOS, Clang, arm64)
+          os: macos-latest
+          artifact: macos-arm64
           env:
-            CC:   gcc-13
-            CXX:  g++-13
-          artifact: linux-x64-release
-          configurePresetAdditionalArgs: "[]"
-        - name: 🍎 Build (MacOS, Clang, x86_64) - Debug
+            VCPKG_DEFAULT_TRIPLET: arm64-osx
+          Debug_configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"arm64\"', '-DCMAKE_BUILD_TYPE=\"Debug\"']"
+          Debug_buildPresetAdditionalArgs: '[`--config Debug`]'
+          Release_configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"arm64\"', '-DCMAKE_BUILD_TYPE=\"Release\"']"
+          Release_buildPresetAdditionalArgs: '[`--config Release`]'
+        - name: 🍎 Build (MacOS, Clang, x86_64)
           os: macos-latest
-          env: {}
-          preset: macos-x64-debug
-          artifact: macos-x86_64-debug
-          configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"x86_64\"']"
-        - name: 🍎 Build (MacOS, Clang, arm64) - Debug
-          os: macos-latest
-          env: {}
-          preset: macos-x64-debug
-          artifact: macos-arm64-debug
-          configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"arm64\"']"
-        - name: 🍎 Build (MacOS, Clang, x86_64) - Release
-          os: macos-latest
-          env: {}
-          preset: macos-x64-release
-          artifact: macos-x86_64-release
-          configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"x86_64\"']"
-        - name: 🍎 Build (MacOS, Clang, arm64) - Release
-          os: macos-latest
-          env: {}
-          preset: macos-x64-release
-          artifact: macos-arm64-release
-          configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"arm64\"']"
+          artifact: macos-x86_64
+          env:
+            VCPKG_DEFAULT_TRIPLET: x64-osx
+          Debug_configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"x86_64\"', '-DCMAKE_BUILD_TYPE=\"Debug\"']"
+          Debug_buildPresetAdditionalArgs: '[`--config Debug`]'
+          Release_configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"x86_64\"', '-DCMAKE_BUILD_TYPE=\"Release\"']"
+          Release_buildPresetAdditionalArgs: '[`--config Release`]'
 
+    env: ${{ matrix.env }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -80,19 +67,36 @@ jobs:
       # Install latest CMake and Ninja.
       - uses: lukka/get-cmake@latest
 
+      # Setup vcpkg: ensures vcpkg is downloaded and built.
+      # Since vcpkg.json is being used later on to install the packages
+      # when `run-cmake` runs, no packages are installed at this time
+      # (and vcpkg does not run).
+      - name: Setup anew (or from cache) vcpkg (and does not build any package)
+        uses: lukka/run-vcpkg@v11 # Always specify the specific _version_ of the
+                                  # action you need, `v11` in this case to stay up
+                                  # to date with fixes on the v11 branch.
+
       - name: Install dependencies
         if: ${{ matrix.os == 'ubuntu-24.04' }}
         run: |
           sudo apt-get update -qq
           sudo apt-get install -qqq build-essential pkg-config gcc-13 g++-13
 
-      - name: Run CMake consuming CMakePreset.json
+      - name: Run CMake consuming CMakePreset.json (Debug)
         uses: lukka/run-cmake@v10
         with:
-          configurePreset: ${{ matrix.preset }}
-          configurePresetAdditionalArgs: ${{ matrix.configurePresetAdditionalArgs }}
-          buildPreset: ${{ matrix.preset }}
-        env: ${{ matrix.env }}
+          configurePreset: default
+          configurePresetAdditionalArgs: ${{ matrix.Debug_configurePresetAdditionalArgs }}
+          buildPreset: default
+          buildPresetAdditionalArgs: ${{ matrix.Debug_buildPresetAdditionalArgs }}
+
+      - name: Run CMake consuming CMakePreset.json (Release)
+        uses: lukka/run-cmake@v10
+        with:
+          configurePreset: default
+          configurePresetAdditionalArgs: ${{ matrix.Release_configurePresetAdditionalArgs }}
+          buildPreset: default
+          buildPresetAdditionalArgs: ${{ matrix.Release_buildPresetAdditionalArgs }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -100,11 +104,6 @@ jobs:
           name: ${{ matrix.artifact }}.${{ github.ref_name }}
           path: bin
           retention-days: 1
-
-      # - name: Build test GDExtension library
-      #   run: |
-      #     cd test && cmake -DCMAKE_BUILD_TYPE=Release -DGODOT_HEADERS_PATH="../godot-headers" -DCPP_BINDINGS_PATH=".." -G"Visual Studio 16 2019" .
-      #     cmake --build . --verbose
 
   archive:
     name: Archive all prebuilt library

@@ -1,0 +1,16 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9609061..587a9f2 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -93,9 +93,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+ 	set(GODOT_COMPILE_FLAGS "/utf-8") # /GF /MP
+ 
+ 	if(CMAKE_BUILD_TYPE MATCHES Debug)
+-		set(GODOT_COMPILE_FLAGS "${GODOT_COMPILE_FLAGS} /MDd") # /Od /RTC1 /Zi
++		set(GODOT_COMPILE_FLAGS "${GODOT_COMPILE_FLAGS} /MTd") # /Od /RTC1 /Zi
+ 	else()
+-		set(GODOT_COMPILE_FLAGS "${GODOT_COMPILE_FLAGS} /MD /O2") # /Oy /GL /Gy
++		set(GODOT_COMPILE_FLAGS "${GODOT_COMPILE_FLAGS} /MT /O2") # /Oy /GL /Gy
+ 		STRING(REGEX REPLACE "/RTC(su|[1su])" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+ 		string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+ 	endif(CMAKE_BUILD_TYPE MATCHES Debug)

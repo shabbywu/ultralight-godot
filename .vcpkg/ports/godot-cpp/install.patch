@@ -1,0 +1,11 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9609061..8042a43 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -226,3 +226,5 @@ set_target_properties(${PROJECT_NAME}
+ 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin"
+ 		OUTPUT_NAME "${OUTPUT_NAME}"
+ )
++
++include(install.cmake)
+\ No newline at end of file

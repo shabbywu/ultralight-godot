@@ -117,11 +117,9 @@ file(GLOB_RECURSE HEADERS include/*.h**)
 # Define our godot-cpp library
 add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
 
-target_include_directories(
-  ${PROJECT_NAME} SYSTEM
-  PRIVATE ${CPP_BINDINGS_PATH}/include ${CPP_BINDINGS_PATH}/gen/include
-          ${GODOT_GDEXTENSION_DIR} ${CMAKE_CURRENT_LIST_DIR}/src)
-target_link_libraries(${PROJECT_NAME} godot-cpp ulbind17::ulbind17)
+target_include_directories(${PROJECT_NAME} SYSTEM
+                           PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
+target_link_libraries(${PROJECT_NAME} godot-cpp::godot-cpp ulbind17::ulbind17)
 
 # Create the correct name (godot.os.build_type.system_bits) Synchronized with
 # godot-cpp's CMakeLists.txt

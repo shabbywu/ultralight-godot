@@ -1,174 +1,23 @@
 {
-	"version": 5,
-	"configurePresets": [
-		{
-			"name": "default",
-			"binaryDir": "${sourceDir}/build/${presetName}",
-			"cacheVariables": {
-				"CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/bin/"
-			},
-			"environment": {
-				"VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/.vcpkg/triplets"
-			},
-			"condition": {
-				"type": "notEquals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Windows"
-			}
-		},
-		{
-			"name": "linux-x64-debug",
-			"inherits": "default",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Debug"
-			},
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Linux"
-			}
-		},
-		{
-			"name": "linux-x64-release",
-			"inherits": "default",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Release"
-			},
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Linux"
-			}
-		},
-		{
-			"name": "windows-x64-debug",
-			"inherits": "default",
-			"architecture": "x64",
-			"generator": "Visual Studio 17 2022",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Debug"
-			},
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Windows"
-			}
-		},
-		{
-			"name": "windows-x64-release",
-			"inherits": "default",
-			"architecture": "x64",
-			"generator": "Visual Studio 17 2022",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Release"
-			},
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Windows"
-			}
-		},
-		{
-			"name": "macos-x64-debug",
-			"inherits": "default",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Debug"
-			},
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Darwin"
-			}
-		},
-		{
-			"name": "macos-x64-release",
-			"inherits": "default",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Release"
-			},
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Darwin"
-			}
-		}
-	],
-	"buildPresets": [
-		{
-			"name": "default",
-			"configurePreset": "default",
-			"configuration": "Release",
-			"condition": {
-				"type": "notEquals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Windows"
-			}
-		},
-		{
-			"name": "linux-x64-debug",
-			"inherits": "default",
-			"configurePreset": "linux-x64-debug",
-			"configuration": "Debug",
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Linux"
-			}
-		},
-		{
-			"name": "linux-x64-release",
-			"inherits": "default",
-			"configurePreset": "linux-x64-release",
-			"configuration": "Release",
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Linux"
-			}
-		},
-		{
-			"name": "windows-x64-debug",
-			"inherits": "default",
-			"configurePreset": "windows-x64-debug",
-			"configuration": "Debug",
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Windows"
-			}
-		},
-		{
-			"name": "windows-x64-release",
-			"inherits": "default",
-			"configurePreset": "windows-x64-release",
-			"configuration": "Release",
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Windows"
-			}
-		},
-		{
-			"name": "macos-x64-debug",
-			"inherits": "default",
-			"configurePreset": "macos-x64-debug",
-			"configuration": "Debug",
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Darwin"
-			}
-		},
-		{
-			"name": "macos-x64-release",
-			"inherits": "default",
-			"configurePreset": "macos-x64-release",
-			"configuration": "Release",
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Darwin"
-			}
-		}
-	]
+    "version": 5,
+    "configurePresets": [
+        {
+            "name": "default",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/bin/",
+                "CMAKE_BUILD_TYPE": "Debug"
+            },
+            "environment": {
+                "VCPKG_OVERLAY_PORTS": "${sourceDir}/.vcpkg/ports/godot-cpp"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default"
+        }
+    ]
 }
