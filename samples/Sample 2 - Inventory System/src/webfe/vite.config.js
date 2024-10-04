@@ -17,5 +17,11 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
-  }
+  },
+  experimental: {
+    renderBuiltUrl(filename, { hostId, hostType, type }) {
+      console.log("[renderBuiltUrl]", filename, hostId, hostType, type)
+      return filename
+    },
+  },
 })

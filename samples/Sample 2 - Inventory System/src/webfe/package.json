@@ -9,11 +9,14 @@
   "dependencies": {
     "@hscmap/vue-window": "^2.4.4",
     "gridstack": "^10.3.1",
+    "uuid": "^10.0.0",
     "vue": "^2.7.7"
   },
   "devDependencies": {
     "@vitejs/plugin-legacy": "^2.0.0",
     "@vitejs/plugin-vue2": "^1.1.2",
+    "sass": "^1.79.4",
+    "sass-embedded": "^1.79.4",
     "terser": "^5.14.2",
     "vite": "^3.0.2"
   }

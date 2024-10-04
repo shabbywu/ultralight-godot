@@ -6,6 +6,7 @@
 #include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
 #include <godot_cpp/classes/input_event.hpp>
+#include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/classes/input_event_mouse_button.hpp>
 #include <godot_cpp/classes/input_event_mouse_motion.hpp>
 #include <godot_cpp/classes/rendering_server.hpp>
@@ -25,6 +26,8 @@
 #include "gdbind/detail/cast.hpp"
 #include "gdbind/detail/godot_callable.hpp"
 #include "gdbind/detail/godot_object.hpp"
+#include "gdbind/events/KeyEvent.hpp"
+#include "gdbind/events/MouseEvent.hpp"
 
 using namespace ultralight;
 using namespace godot;
@@ -130,32 +133,26 @@ class UltralightView : public TextureRect {
         } else if (auto mouse_motion = dynamic_cast<InputEventMouseMotion *>(p_event.ptr()); mouse_motion != nullptr) {
             fireMouseEvent(mouse_motion->get_position(), MouseButton::MOUSE_BUTTON_NONE, mouse_motion->is_pressed());
             accept_event();
+        } else if (auto key = dynamic_cast<InputEventKey *>(p_event.ptr()); view->HasFocus() && key != nullptr) {
+            fireKeyEvent(key);
+            accept_event();
         }
     }
 
   protected:
     void fireMouseEvent(godot::Vector2 position, MouseButton button_index, bool is_pressed) {
-        MouseEvent evt;
-        evt.type = is_pressed ? MouseEvent::kType_MouseDown : MouseEvent::kType_MouseUp;
-        evt.x = position.x;
-        evt.y = position.y;
-        switch (button_index) {
-        case MouseButton::MOUSE_BUTTON_LEFT:
-            evt.button = MouseEvent::kButton_Left;
-            break;
-        case MouseButton::MOUSE_BUTTON_RIGHT:
-            evt.button = MouseEvent::kButton_Right;
-            break;
-        case MouseButton::MOUSE_BUTTON_MIDDLE:
-            evt.button = MouseEvent::kButton_Middle;
-            break;
-        default:
-            evt.button = MouseEvent::kButton_None;
-            evt.type = MouseEvent::kType_MouseMoved;
-            break;
-        }
+        MouseEvent evt = events::convertMouseEvent(position, button_index, is_pressed);
         view->FireMouseEvent(evt);
     }
+
+    void fireKeyEvent(InputEventKey *key) {
+        KeyEvent evt = events::convertInputEventKey(key);
+        // You'll need to generate a key identifier from the virtual key code
+        // when synthesizing events. This function is provided in KeyEvent.h
+        ultralight::GetKeyIdentifierFromVirtualKeyCode(evt.virtual_key_code, evt.key_identifier);
+        view->FireKeyEvent(evt);
+    }
+
 #pragma endregion
 
 #pragma region default godot ready action
