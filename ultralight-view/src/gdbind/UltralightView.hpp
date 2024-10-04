@@ -140,8 +140,6 @@ class UltralightView : public TextureRect {
         if (auto key = dynamic_cast<InputEventKey *>(p_event.ptr()); view->HasFocus() && key != nullptr) {
             fireKeyEvent(key);
             accept_event();
-        } else {
-            UtilityFunctions::print("unknown event", p_event);
         }
     }
 
@@ -157,7 +155,6 @@ class UltralightView : public TextureRect {
         // when synthesizing events. This function is provided in KeyEvent.h
         ultralight::GetKeyIdentifierFromVirtualKeyCode(evt.virtual_key_code, evt.key_identifier);
         view->FireKeyEvent(evt);
-        UtilityFunctions::print("fire keyboard event!", key);
     }
 
 #pragma endregion
