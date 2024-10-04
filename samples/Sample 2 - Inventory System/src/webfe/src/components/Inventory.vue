@@ -62,11 +62,19 @@ function setupRotatedNode(node, content, updating) {
         const _orig = node._orig;
         const currentGrid = node.grid;
         const CurrentEngine = currentGrid.engine;
-        CurrentEngine.findEmptyPosition(node, CurrentEngine.nodes.filter(n => node !== n), CurrentEngine.column)
+        // temp swap w and h to find position
+        Utils.swap(node, 'w', 'h');
+        CurrentEngine.findEmptyPosition(node, CurrentEngine.nodes.filter(n => node !== n), CurrentEngine.column);
+        if (CurrentEngine.maxRow < node.y + node.h) {
+            console.warn("fail to find empty position!!!");
+            Utils.copyPos(node, node._orig)
+            return;
+        }
+        Utils.swap(node, 'w', 'h');
+
         currentGrid.update(node.el, updating);
         node._orig = _orig;
         Utils.swap(node._orig, 'w', 'h');
-        console.log("_orig: ", {...node._orig}, {...updating})
     }
 
     let rotateDeg = node.rotateDeg || 0;
@@ -77,8 +85,14 @@ function setupRotatedNode(node, content, updating) {
     if (updating !== undefined) {
         content.setAttribute("updating", 1);
     }
-
-    content.style.width = `${h * cellSize}px`;
+    if (rotateDeg === 90 || rotateDeg === 270) {
+        content.style.width = `${h * cellSize}px`;
+        content.style.height = `${w * cellSize}px`;
+    }
+    else {
+        content.style.width = `${w * cellSize}px`;
+        content.style.height = `${h * cellSize}px`;
+    }
     content.style.position = `relative`;
 }
 
@@ -134,7 +148,6 @@ onMounted(() => {
             content: el.querySelector('.grid-stack-item-content'),
             node: el.gridstackNode,
         };
-
         // switch width and height to fixup rotate(90deg) or rotate(270deg)
         if (el.gridstackNode.rotateDeg == 90 || el.gridstackNode.rotateDeg == 270) {
             let width = el.style.width;
@@ -218,10 +231,9 @@ onMounted(() => {
 
 
 .grid-stack .grid-stack-item-content img {
-    max-width: 100% !important;
-    max-height: 100% !important;
-    width: fit-content;
-    height: fit-content;
+    max-width: fit-content;
+    width: inherit;
+    height: inherit;
 }
 
 .ui-draggable-dragging .grid-stack-item-content {

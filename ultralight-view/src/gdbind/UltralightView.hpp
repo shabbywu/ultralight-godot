@@ -124,7 +124,7 @@ class UltralightView : public TextureRect {
 
 #pragma region godot input handler
   public:
-    virtual void _gui_input(const Ref<InputEvent> &p_event) {
+    virtual void _gui_input(const Ref<InputEvent> &p_event) override {
         if (view.get() == nullptr)
             return;
         if (auto mouse_button = dynamic_cast<InputEventMouseButton *>(p_event.ptr()); mouse_button != nullptr) {
@@ -133,9 +133,15 @@ class UltralightView : public TextureRect {
         } else if (auto mouse_motion = dynamic_cast<InputEventMouseMotion *>(p_event.ptr()); mouse_motion != nullptr) {
             fireMouseEvent(mouse_motion->get_position(), MouseButton::MOUSE_BUTTON_NONE, mouse_motion->is_pressed());
             accept_event();
-        } else if (auto key = dynamic_cast<InputEventKey *>(p_event.ptr()); view->HasFocus() && key != nullptr) {
+        }
+    }
+
+    virtual void _unhandled_input(const Ref<InputEvent> &p_event) override {
+        if (auto key = dynamic_cast<InputEventKey *>(p_event.ptr()); view->HasFocus() && key != nullptr) {
             fireKeyEvent(key);
             accept_event();
+        } else {
+            UtilityFunctions::print("unknown event", p_event);
         }
     }
 
@@ -151,6 +157,7 @@ class UltralightView : public TextureRect {
         // when synthesizing events. This function is provided in KeyEvent.h
         ultralight::GetKeyIdentifierFromVirtualKeyCode(evt.virtual_key_code, evt.key_identifier);
         view->FireKeyEvent(evt);
+        UtilityFunctions::print("fire keyboard event!", key);
     }
 
 #pragma endregion

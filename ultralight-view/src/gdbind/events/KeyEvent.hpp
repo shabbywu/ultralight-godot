@@ -10,7 +10,7 @@ inline ultralight::KeyEvent convertInputEventKey(godot::InputEventKey *key) {
     using namespace godot;
 
     KeyEvent evt;
-    evt.type = KeyEvent::kType_RawKeyDown;
+    evt.type = key->is_pressed() ? KeyEvent::kType_RawKeyDown : KeyEvent::kType_KeyUp;
     evt.native_key_code = 0;
     // convert modifiers
     auto mask = key->get_modifiers_mask();
