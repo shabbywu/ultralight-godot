@@ -183,11 +183,21 @@ class UltralightView : public TextureRect {
 
 #pragma region default godot ready action
   public:
-    // init view
+    bool lazy;
+    void setLazy(bool lazy) {
+        this->lazy = lazy;
+    }
+
+    bool getLazy() {
+        return this->lazy;
+    }
+
+    // init view if not lazy
     virtual void _ready() override {
         if (view.get() != nullptr)
             return;
-        initView();
+        if (!lazy)
+            initView();
     }
 #pragma endregion
 
@@ -280,6 +290,10 @@ class UltralightView : public TextureRect {
         ClassDB::bind_method(D_METHOD("set_transparent", "is_transparent"), &UltralightView::setTransparent);
         ClassDB::bind_method(D_METHOD("get_transparent"), &UltralightView::getTransparent);
         ADD_PROPERTY(PropertyInfo(Variant::BOOL, "transparent"), "set_transparent", "get_transparent");
+
+        ClassDB::bind_method(D_METHOD("set_lazy", "is_lazy"), &UltralightView::setLazy);
+        ClassDB::bind_method(D_METHOD("get_lazy"), &UltralightView::getLazy);
+        ADD_PROPERTY(PropertyInfo(Variant::BOOL, "lazy"), "set_lazy", "get_lazy");
 
         ClassDB::bind_method(D_METHOD("init_view"), &UltralightView::initView);
         ClassDB::bind_method(D_METHOD("bind_func", "funcName", "callback"), &UltralightView::bindFunc);

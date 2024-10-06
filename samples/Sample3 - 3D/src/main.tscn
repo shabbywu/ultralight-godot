@@ -1,6 +1,13 @@
-[gd_scene load_steps=11 format=3 uid="uid://cor1t5knfpfju"]
+[gd_scene load_steps=14 format=3 uid="uid://cor1t5knfpfju"]
 
+[ext_resource type="Script" path="res://Main.cs" id="1_4y05d"]
 [ext_resource type="PackedScene" uid="uid://bw5aubs32yp77" path="res://gui.tscn" id="2_dshhb"]
+
+[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_co8jp"]
+plane = Plane(0, 0.1, 0, 0)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ua68f"]
+size = Vector2(100, 100)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pvumr"]
 
@@ -17,41 +24,17 @@ radius = 0.2
 [sub_resource type="CylinderMesh" id="CylinderMesh_sdyqy"]
 material = SubResource("StandardMaterial3D_2irot")
 
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_hiq4h"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_k3mks"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_jtj6r"]
 material = SubResource("StandardMaterial3D_k3mks")
 
-[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_co8jp"]
-plane = Plane(0, 0.1, 0, 0)
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_ua68f"]
-size = Vector2(100, 100)
+[sub_resource type="BoxShape3D" id="BoxShape3D_ev3mr"]
 
 [node name="Main" type="Node3D"]
-
-[node name="sphere" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.266775, 3, 2.35)
-gravity_scale = 0.1
-
-[node name="mesh" type="MeshInstance3D" parent="sphere"]
-mesh = SubResource("SphereMesh_dbwit")
-skeleton = NodePath("../../Cylinder")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="sphere"]
-shape = SubResource("SphereShape3D_18fdx")
-
-[node name="Cylinder" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.34, 2, 0.894)
-gi_mode = 2
-mesh = SubResource("CylinderMesh_sdyqy")
-skeleton = NodePath("../Box")
-
-[node name="Box" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.930468, 2.28386, 0.123719)
-gi_mode = 2
-mesh = SubResource("BoxMesh_jtj6r")
-skeleton = NodePath("")
+script = ExtResource("1_4y05d")
 
 [node name="Ground" type="StaticBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
@@ -61,6 +44,41 @@ shape = SubResource("WorldBoundaryShape3D_co8jp")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
 mesh = SubResource("PlaneMesh_ua68f")
+
+[node name="sphere" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.266775, 3, 2.35)
+gravity_scale = 0.1
+
+[node name="mesh" type="MeshInstance3D" parent="sphere"]
+mesh = SubResource("SphereMesh_dbwit")
+skeleton = NodePath("../../Cylinder/Cylinder")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="sphere"]
+shape = SubResource("SphereShape3D_18fdx")
+
+[node name="Cylinder" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.34, 2, 0.894)
+
+[node name="Cylinder" type="MeshInstance3D" parent="Cylinder"]
+gi_mode = 2
+mesh = SubResource("CylinderMesh_sdyqy")
+skeleton = NodePath("../../Box/Box")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Cylinder"]
+shape = SubResource("CylinderShape3D_hiq4h")
+
+[node name="Box" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.05894, 2.34291, -0.214202)
+freeze = true
+freeze_mode = 1
+
+[node name="Box" type="MeshInstance3D" parent="Box"]
+gi_mode = 2
+mesh = SubResource("BoxMesh_jtj6r")
+skeleton = NodePath("")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Box"]
+shape = SubResource("BoxShape3D_ev3mr")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.713532, -0.129502, 0.68855, -0.0153812, 0.979637, 0.200189, -0.700453, -0.153432, 0.69701, 5.63547, 4.48991, 4.41801)
