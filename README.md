@@ -44,3 +44,5 @@ Display Web-Content in Godot. You can use html/css/JavaScript as like godot nati
 ![image](https://github.com/user-attachments/assets/6216a3bb-6f5d-4d63-9aa7-102b0001135b)
 
 https://github.com/user-attachments/assets/b193f148-a446-4772-89aa-aed81d1bd360
+
+https://github.com/user-attachments/assets/bbc25e23-3827-4581-b3c0-ba3ac2a38baa
