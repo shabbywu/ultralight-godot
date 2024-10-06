@@ -25,15 +25,16 @@ Display Web-Content in Godot. You can use html/css/JavaScript as like godot nati
 - Supports transparent background, helpful for use as a UI system.
 - Input
     - Mouse Input
+    - Keyboard Input
+    - Mouse Scroll Input
+- Remote UI Inspector, aka, DevTools.
 
 ## Samples
 - [Sample 1 - Load Html And Bind CSharp Callback](samples/Sample%201%20-%20Load%20Html%20And%20Bind%20CSharp%20Callback)
 - [Sample 2 - Grid-based Inventory System](samples/Sample%202%20-%20Inventory%20System)
-
+- [Sample 3 - 3D](samples/Sample%202%20-%203D)
 
 ## In Progress
-- [ ] Keyboard Input
-- [ ] Remote UI Inspector, aka, DevTools.
 - [ ] More Samples about how to use ultralight-godot as UI system.
 - [ ] Tutorial...
 

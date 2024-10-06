@@ -33,5 +33,26 @@ inline ultralight::MouseEvent convertMouseEvent(godot::Vector2 position, godot::
     return evt;
 }
 
+inline ultralight::ScrollEvent convertScrollEvent(godot::MouseButton button_index) {
+    using namespace ultralight;
+    using namespace godot;
+
+    ScrollEvent evt;
+    evt.type = ScrollEvent::kType_ScrollByPixel;
+    evt.delta_x = 0;
+    evt.delta_y = 0;
+    const int step = 30;
+    if (button_index == MouseButton::MOUSE_BUTTON_WHEEL_UP) {
+        evt.delta_y = step;
+    } else if (button_index == MouseButton::MOUSE_BUTTON_WHEEL_DOWN) {
+        evt.delta_y = -step;
+    } else if (button_index == MouseButton::MOUSE_BUTTON_WHEEL_LEFT) {
+        evt.delta_x = step;
+    } else if (button_index == MouseButton::MOUSE_BUTTON_WHEEL_RIGHT) {
+        evt.delta_x = -step;
+    }
+    return evt;
+}
+
 } // namespace events
 } // namespace gdbind

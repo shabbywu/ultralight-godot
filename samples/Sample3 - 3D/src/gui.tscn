@@ -1,0 +1,38 @@
+[gd_scene load_steps=6 format=3 uid="uid://bw5aubs32yp77"]
+
+[ext_resource type="Script" path="res://Gui.cs" id="1_mi1ab"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_ya2h8"]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_v60d8"]
+viewport_path = NodePath("SubViewport")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_g2p8h"]
+resource_local_to_scene = true
+albedo_texture = SubResource("ViewportTexture_v60d8")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ep1mo"]
+size = Vector3(1, 1, 0.001)
+
+[node name="Gui" type="Node3D"]
+script = ExtResource("1_mi1ab")
+
+[node name="SubViewport" type="SubViewport" parent="."]
+gui_snap_controls_to_pixels = false
+gui_embed_subwindows = true
+size = Vector2i(1024, 768)
+
+[node name="UltralightView" type="UltralightView" parent="SubViewport"]
+htmlUrl = "https://blog.shabbywu.cn/"
+transparent = true
+offset_right = 1024.0
+offset_bottom = 768.0
+
+[node name="Quad" type="MeshInstance3D" parent="."]
+mesh = SubResource("QuadMesh_ya2h8")
+surface_material_override/0 = SubResource("StandardMaterial3D_g2p8h")
+
+[node name="Area3D" type="Area3D" parent="Quad"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Quad/Area3D"]
+shape = SubResource("BoxShape3D_ep1mo")

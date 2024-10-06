@@ -66,7 +66,7 @@ class UltralightView : public TextureRect {
     }
 
     void _notification(int p_what) {
-        if (p_what == NOTIFICATION_EDITOR_PRE_SAVE ) {
+        if (p_what == NOTIFICATION_EDITOR_PRE_SAVE) {
             // To avoid meaningless storage, clear the texture before saving.
             set_texture(nullptr);
         }
@@ -161,8 +161,14 @@ class UltralightView : public TextureRect {
 
   protected:
     void fireMouseEvent(godot::Vector2 position, MouseButton button_index, bool is_pressed) {
-        MouseEvent evt = events::convertMouseEvent(position, button_index, is_pressed);
-        view->FireMouseEvent(evt);
+        if (button_index == MOUSE_BUTTON_WHEEL_UP || button_index == MOUSE_BUTTON_WHEEL_DOWN ||
+            button_index == MOUSE_BUTTON_WHEEL_LEFT || button_index == MOUSE_BUTTON_WHEEL_RIGHT) {
+            ScrollEvent evt = events::convertScrollEvent(button_index);
+            view->FireScrollEvent(evt);
+        } else {
+            MouseEvent evt = events::convertMouseEvent(position, button_index, is_pressed);
+            view->FireMouseEvent(evt);
+        }
     }
 
     void fireKeyEvent(InputEventKey *key) {
