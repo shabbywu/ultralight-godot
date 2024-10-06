@@ -10,4 +10,4 @@ Simple Example show how to integrate ultralight-view in 3D world.
 - [x] Loading font set by godot theme.
 
 ## Screenshot
-https://github.com/user-attachments/assets/b193f148-a446-4772-89aa-aed81d1bd360
+https://github.com/user-attachments/assets/bbc25e23-3827-4581-b3c0-ba3ac2a38baa
