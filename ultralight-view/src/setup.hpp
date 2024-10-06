@@ -1,11 +1,10 @@
 #pragma once
 #include "gdbind/Filesystem.hpp"
+#include "gdbind/FontLoader.hpp"
 #include "gdbind/Logger.hpp"
 #include "gdbind/PackedByteArraySurface.hpp"
 #include <Ultralight/Ultralight.h>
 
-#include <ulbind17/fonts/FreeUniversal-Regular.h>
-#include <ulbind17/platform/FontLoader.hpp>
 #include <ulbind17/resources/cacert.h>
 #include <ulbind17/resources/icudt67l.h>
 
@@ -57,10 +56,7 @@ static void setup_ultralight_platform() {
     // Setup platform
     ultralight::Config my_config;
     platform.set_config(my_config);
-    auto &font = bin2cpp::getFreeUniversalRegularTtfFile();
-    platform.set_font_loader(new ulbind17::platform::MemoryFontLoader(
-        {{font.getFileName(), ultralight::FontFile::Create(ultralight::Buffer::Create(
-                                  (void *)font.getBuffer(), font.getSize(), nullptr, nullptr))}}));
+    platform.set_font_loader(new gdbind::GodotFontLoader());
     platform.set_file_system(new gdbind::setup::EmbeddedResourceFileSystem());
 
     platform.set_logger(GodotLogger::instance());

@@ -137,8 +137,12 @@ class UltralightView : public TextureRect {
     }
 
     virtual void _unhandled_input(const Ref<InputEvent> &p_event) override {
+        if (view.get() == nullptr)
+            return;
         if (auto key = dynamic_cast<InputEventKey *>(p_event.ptr()); view->HasFocus() && key != nullptr) {
             fireKeyEvent(key);
+        } else if (auto mouse_motion = dynamic_cast<InputEventMouseMotion *>(p_event.ptr()); mouse_motion != nullptr) {
+            fireMouseEvent(mouse_motion->get_position(), MouseButton::MOUSE_BUTTON_NONE, mouse_motion->is_pressed());
             accept_event();
         }
     }
@@ -263,6 +267,11 @@ class UltralightView : public TextureRect {
         ClassDB::bind_method(D_METHOD("bind_func", "funcName", "callback"), &UltralightView::bindFunc);
         ClassDB::bind_method(D_METHOD("bind_object", "propertyName", "instance"), &UltralightView::bindObject);
         ClassDB::bind_method(D_METHOD("execute_script", "script"), &UltralightView::executeScript);
+
+        // control
+        ClassDB::bind_method(D_METHOD("fire_key_event", "key_event"), &UltralightView::fireKeyEvent);
+        ClassDB::bind_method(D_METHOD("fire_mouse_event", "position", "button_index", "is_pressed"),
+                             &UltralightView::fireMouseEvent);
 
         // signal callback
         ClassDB::bind_method(D_METHOD("on_update_frame"), &UltralightView::updateFrame);
