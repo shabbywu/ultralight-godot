@@ -5,6 +5,7 @@
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
+
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/classes/input_event_mouse_button.hpp>
@@ -47,7 +48,6 @@ class UltralightView : public TextureRect {
     virtual ~UltralightView() override {
         disconnect("resized", Callable(this, "on_resized"));
         RenderingServer::get_singleton()->disconnect("frame_post_draw", Callable(this, "on_update_frame"));
-
         view = nullptr;
     }
 
@@ -65,6 +65,17 @@ class UltralightView : public TextureRect {
         }
     }
 
+    void _notification(int p_what) {
+        if (p_what == NOTIFICATION_EDITOR_PRE_SAVE ) {
+            // To avoid meaningless storage, clear the texture before saving.
+            set_texture(nullptr);
+        }
+        if (p_what == NOTIFICATION_EDITOR_POST_SAVE) {
+            // Restore the texture for better user experience.
+            set_texture(texture);
+        }
+    }
+
 #pragma region godot texture property
   protected:
     Ref<ImageTexture> texture;
@@ -76,6 +87,7 @@ class UltralightView : public TextureRect {
         if (image == nullptr) {
             image =
                 Image::create_from_data(surface->width(), surface->height(), false, Image::FORMAT_RGBA8, surface->data);
+            image->set_local_to_scene(false);
             image->generate_mipmaps();
             texture = ImageTexture::create_from_image(image);
             set_texture(texture);
