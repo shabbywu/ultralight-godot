@@ -58,6 +58,7 @@
 # VSCode
 .vscode/*
 !.vscode/extensions.json
+.vs
 .DS_Store
 
 # IDEA

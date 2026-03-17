@@ -119,6 +119,15 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
 
 target_include_directories(${PROJECT_NAME} SYSTEM
                            PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
+
+# Add ultralight shader include path
+get_target_property(ULTRALIGHT_BINARY_DIR ultralight-sdk ULTRALIGHT_BINARY_DIR)
+if(ULTRALIGHT_BINARY_DIR)
+  set(ULTRALIGHT_SHADER_DIR "${ULTRALIGHT_BINARY_DIR}/../shaders/glsl")
+  target_include_directories(${PROJECT_NAME} SYSTEM
+                             PRIVATE "${ULTRALIGHT_SHADER_DIR}")
+endif()
+
 target_link_libraries(${PROJECT_NAME} godot-cpp::godot-cpp ulbind17::ulbind17)
 
 # Create the correct name (godot.os.build_type.system_bits) Synchronized with

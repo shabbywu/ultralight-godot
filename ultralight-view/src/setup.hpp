@@ -3,6 +3,7 @@
 #include "gdbind/FontLoader.hpp"
 #include "gdbind/Logger.hpp"
 #include "gdbind/PackedByteArraySurface.hpp"
+#include "gdbind/gpu/GodotGPUDriver.hpp"
 #include <Ultralight/Ultralight.h>
 
 #include <ulbind17/resources/cacert.h>
