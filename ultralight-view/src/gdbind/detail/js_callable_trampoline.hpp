@@ -29,7 +29,7 @@ class JavascrtipCallableTrampoline : public godot::RefCounted {
     }
 
   public:
-    JavascriptCallable *callable;
+    JavascriptCallable *callable = nullptr;
     JavascrtipCallableTrampoline() : RefCounted() {};
     JavascrtipCallableTrampoline(JavascriptCallable *callable) : RefCounted(), callable(callable) {
     }

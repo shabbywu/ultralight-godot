@@ -1,5 +1,8 @@
 #pragma once
 #include <memory>
+#include <chrono>
+#include <godot_cpp/classes/texture2d.hpp>
+#include <godot_cpp/variant/vector4.hpp>
 
 #include <Ultralight/Ultralight.h>
 #include <godot_cpp/classes/file_access.hpp>
@@ -21,7 +24,7 @@
 #include <ulbind17/ulbind17.hpp>
 
 #include "gdbind/PackedByteArraySurface.hpp"
-#include "gdbind/Shader.hpp"
+#include "gdbind/CPUSurfaceShader.hpp"
 #include "gdbind/UltralightSingleton.hpp"
 #include "gdbind/debug.hpp"
 #include "gdbind/detail/cast.hpp"
@@ -29,6 +32,7 @@
 #include "gdbind/detail/godot_object.hpp"
 #include "gdbind/events/KeyEvent.hpp"
 #include "gdbind/events/MouseEvent.hpp"
+#include "gdbind/gpu/GodotGPUDriver.hpp"
 
 using namespace ultralight;
 using namespace godot;
@@ -41,15 +45,11 @@ class UltralightView : public TextureRect {
     UltralightView() : TextureRect() {
         connect("resized", Callable(this, "on_resized"));
         RenderingServer::get_singleton()->connect("frame_post_draw", Callable(this, "on_update_frame"));
-        set_material(gdbind::Shader::bulitin_material());
+        set_material(gdbind::CPUSurfaceShader::getMaterial());
         set_expand_mode(ExpandMode::EXPAND_IGNORE_SIZE);
     }
 
-    virtual ~UltralightView() override {
-        disconnect("resized", Callable(this, "on_resized"));
-        RenderingServer::get_singleton()->disconnect("frame_post_draw", Callable(this, "on_update_frame"));
-        view = nullptr;
-    }
+    virtual ~UltralightView() override = default;
 
     /// @brief Render this view to their godot texture
     ///
@@ -58,6 +58,23 @@ class UltralightView : public TextureRect {
     void updateFrame() {
         if (view.get() == nullptr)
             return;
+        if (using_accelerated) {
+            auto &driver = GodotGPUDriver::instance();
+            if (!driver.available()) {
+                UtilityFunctions::push_warning("Ultralight GPU failed; recreating View on CPU.");
+                force_cpu = true;
+                initView();
+                return;
+            }
+            auto target = view->render_target();
+            auto display = driver.display_texture(target.texture_id);
+            if (display.is_valid()) {
+                if (texture != display) { texture = display; set_texture(texture); }
+                const auto &uv = target.uv_coords;
+                gpu_material->set_shader_parameter("uv_rect", Vector4(uv.left,uv.top,uv.right,uv.bottom));
+            }
+            return;
+        }
         PackedByteArraySurface *surface = (PackedByteArraySurface *)(view->surface());
         if (!surface->dirty_bounds().IsEmpty()) {
             updateTexture(surface);
@@ -66,6 +83,13 @@ class UltralightView : public TextureRect {
     }
 
     void _notification(int p_what) {
+        if (p_what == NOTIFICATION_PREDELETE) {
+            // CanvasItem APIs remain valid here, before the engine destroys
+            // its base classes and releases the GDExtension instance.
+            disconnect("resized", Callable(this, "on_resized"));
+            RenderingServer::get_singleton()->disconnect("frame_post_draw", Callable(this, "on_update_frame"));
+            resetView();
+        }
         if (p_what == NOTIFICATION_EDITOR_PRE_SAVE) {
             // To avoid meaningless storage, clear the texture before saving.
             set_texture(nullptr);
@@ -78,12 +102,52 @@ class UltralightView : public TextureRect {
 
 #pragma region godot texture property
   protected:
-    Ref<ImageTexture> texture;
+    Ref<Texture2D> texture;
+    Ref<ShaderMaterial> gpu_material;
+    bool accelerated = false, using_accelerated = false, force_cpu = false;
+    uint64_t cpu_upload_bytes = 0, cpu_mipmap_count = 0;
+    double cpu_upload_us = 0;
+    std::shared_ptr<UltralightRenderer::Listeners> listeners;
+    JSContextRef callback_context = nullptr;
+    void resetView() {
+        set_texture(nullptr);
+        set_material(nullptr);
+        gpu_material.unref();
+        texture.unref(); image.unref();
+        if (callback_context) { godot_callable::release_context(callback_context); callback_context = nullptr; }
+        if (view.get()) {
+            view->set_load_listener(nullptr);
+            view->set_view_listener(nullptr);
+            view->set_network_listener(nullptr);
+            view->set_download_listener(nullptr);
+            view = nullptr;
+        }
+        listeners.reset();
+        using_accelerated = false;
+    }
+    void setAccelerated(bool enabled) { accelerated = enabled; force_cpu = false; }
+    bool getAccelerated() const { return accelerated; }
+    bool isAccelerated() const { return view.get() != nullptr && using_accelerated; }
+    Dictionary getRenderStatistics() const {
+        Dictionary result;
+        const bool gpu_active = isAccelerated();
+        result["accelerated"] = gpu_active;
+        result["ultralight_render_us"] = UltralightRenderer::render_time_us();
+        result["cpu_page_upload_bytes"] = int64_t(cpu_upload_bytes);
+        result["cpu_mipmap_count"] = int64_t(cpu_mipmap_count);
+        result["cpu_upload_us"] = cpu_upload_us;
+        // GPUDriver totals are an optional addition for an active GPU View.
+        // CPU, uninitialized and fallback Views only report the base statistics.
+        if (gpu_active)
+            result.merge(GodotGPUDriver::instance().statistics());
+        return result;
+    }
     Ref<Image> image;
 
     RefPtr<View> view;
 
     void updateTexture(PackedByteArraySurface *surface) {
+        auto start = std::chrono::steady_clock::now();
         if (image == nullptr) {
             image =
                 Image::create_from_data(surface->width(), surface->height(), false, Image::FORMAT_RGBA8, surface->data);
@@ -94,21 +158,37 @@ class UltralightView : public TextureRect {
         } else {
             image->set_data(surface->width(), surface->height(), false, Image::FORMAT_RGBA8, surface->data);
             image->generate_mipmaps();
-            texture->update(image);
+            Ref<ImageTexture> cpu_texture = texture;
+            cpu_texture->update(image);
         }
+        cpu_upload_bytes += image->get_data().size();
+        ++cpu_mipmap_count;
+        cpu_upload_us = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now()-start).count();
     }
 
     void initView() {
         if (view.get() != nullptr) {
             UtilityFunctions::push_warning("view is already created, will destroy previous view.");
         }
+        resetView();
         auto size = get_size();
         ViewConfig cfg;
-        cfg.is_accelerated = false;
+        using_accelerated = accelerated && !force_cpu && GodotGPUDriver::instance().initialize();
+        if (accelerated && !using_accelerated)
+            UtilityFunctions::push_warning("Ultralight: RenderingDevice unavailable; using CPU Surface.");
+        cfg.is_accelerated = using_accelerated;
+        if (using_accelerated) {
+            gpu_material = GodotGPUDriver::createDisplayMaterial();
+            set_material(gpu_material);
+        } else {
+            gpu_material.unref();
+            set_material(gdbind::CPUSurfaceShader::getMaterial());
+        }
         cfg.is_transparent = is_transparent;
         if (size.width > 0 && size.height > 0) {
             auto result = UltralightSingleton::get_singleton()->createView(size.width, size.height, cfg, nullptr);
             view = result.view;
+            listeners = result.listeners;
             if (!html.is_empty()) {
                 auto utf32 = html.utf32();
                 ultralight::String32 content(utf32.get_data(), utf32.length());
@@ -119,15 +199,18 @@ class UltralightView : public TextureRect {
                 view->LoadURL(url);
             }
 
-            result.loadListener->onWindowObjectReady = [this](ultralight::View *caller, uint64_t frame_id,
+            result.listeners->load.onWindowObjectReady = [this](ultralight::View *caller, uint64_t frame_id,
                                                               bool is_main_frame, const ultralight::String &url) {
+                if (!is_main_frame) return;
                 {
-                    gdbind::GodotObject::defindJSClass(view->LockJSContext()->ctx());
+                    if (callback_context) godot_callable::release_context(callback_context);
+                    callback_context = view->LockJSContext()->ctx();
+                    gdbind::GodotObject::defindJSClass(callback_context);
                     bindObject("__godot_view_instance", this);
                 }
                 emit_signal("on_window_object_ready");
             };
-            result.loadListener->onDOMReady = [this](ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
+            result.listeners->load.onDOMReady = [this](ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
                                                      const ultralight::String &url) { emit_signal("on_dom_ready"); };
         }
     }
@@ -183,7 +266,7 @@ class UltralightView : public TextureRect {
 
 #pragma region default godot ready action
   public:
-    bool lazy;
+    bool lazy = false;
     void setLazy(bool lazy) {
         this->lazy = lazy;
     }
@@ -205,10 +288,11 @@ class UltralightView : public TextureRect {
   public:
     virtual void onResized() {
         auto size = get_size();
-        image.unref();
-        if (view.get() != nullptr) {
+        set_texture(nullptr); texture.unref(); image.unref();
+        if (view.get() != nullptr && size.width > 0 && size.height > 0) {
             view->Resize(size.width, size.height);
-            updateFrame();
+            // The next renderer frame updates the Surface or RenderTarget;
+            // frame_post_draw then publishes it through this View's updateFrame().
         }
     }
 #pragma endregion
@@ -216,18 +300,23 @@ class UltralightView : public TextureRect {
 #pragma region ultralight method
   protected:
     void bindFunc(godot::String funcName, Callable callback) {
+        if (!view.get()) return;
         auto ctx = view->LockJSContext();
+        callback_context = ctx->ctx();
         auto window = ulbind17::detail::Object::GetGlobalObject(ctx->ctx());
         window.set(funcName.utf8().ptr(), std::move(Variant(callback)));
     }
 
     void bindObject(godot::String propertyName, godot::Object *instance) {
+        if (!view.get()) return;
         auto ctx = view->LockJSContext();
+        callback_context = ctx->ctx();
         auto window = ulbind17::detail::Object::GetGlobalObject(ctx->ctx());
         window.set(propertyName.utf8().ptr(), std::move(Variant(instance)));
     }
 
     godot::Variant executeScript(godot::String script) {
+        if (!view.get()) return Variant();
         auto ctx = view->LockJSContext();
         return ulbind17::detail::Script(ctx->ctx(), script.utf8().ptr()).Evaluate<Variant>();
     }
@@ -236,7 +325,7 @@ class UltralightView : public TextureRect {
 
 #pragma region ultralight property
   protected:
-    bool is_transparent;
+    bool is_transparent = false;
     void setTransparent(bool is_transparent) {
         this->is_transparent = is_transparent;
     }
@@ -278,6 +367,11 @@ class UltralightView : public TextureRect {
 #pragma endregion
 
     static void _bind_methods() {
+        ClassDB::bind_method(D_METHOD("set_accelerated", "enabled"), &UltralightView::setAccelerated);
+        ClassDB::bind_method(D_METHOD("get_accelerated"), &UltralightView::getAccelerated);
+        ADD_PROPERTY(PropertyInfo(Variant::BOOL, "accelerated"), "set_accelerated", "get_accelerated");
+        ClassDB::bind_method(D_METHOD("is_accelerated"), &UltralightView::isAccelerated);
+        ClassDB::bind_method(D_METHOD("get_render_statistics"), &UltralightView::getRenderStatistics);
         // ultralight region function
         ClassDB::bind_method(D_METHOD("set_html_content", "html"), &UltralightView::setHtmlContent);
         ClassDB::bind_method(D_METHOD("get_html_content"), &UltralightView::getHtmlContent);

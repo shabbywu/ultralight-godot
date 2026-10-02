@@ -35,7 +35,7 @@ JSValueRef generic_cast(JSContextRef ctx, Variant value) {
         return generic_cast<std::string, JSValueRef>(ctx, std::move(std::string(s.utf8().ptr())));
     }
     case Variant::Type::CALLABLE: {
-        auto func = std::make_shared<gdbind::godot_callable>(value);
+        auto func = std::make_shared<gdbind::godot_callable>(ctx, value);
         return gdbind::NativeFunction(ctx, func).rawref();
     }
     case Variant::Type::DICTIONARY: {

@@ -11,6 +11,16 @@ class GodotFontLoader : public ultralight::FontLoader {
   protected:
     std::map<godot::String, ultralight::RefPtr<ultralight::FontFile>> _fonts;
 
+    static godot::Ref<godot::Font> font_for_family(const godot::String &family) {
+        auto db = godot::ThemeDB::get_singleton();
+        auto project = db->get_project_theme();
+        if (project.is_valid()) {
+            auto font = project->get_font(family, "");
+            if (font.is_valid()) return font;
+        }
+        return db->get_default_theme()->get_font(family, "");
+    }
+
     static bool validate_ttf(const uint8_t *ptr, int64_t size) {
         if (size < 16) {
             return false;
@@ -22,7 +32,7 @@ class GodotFontLoader : public ultralight::FontLoader {
 
   public:
     virtual ultralight::String fallback_font() const override {
-        auto font = godot::ThemeDB::get_singleton()->get_fallback_font();
+        auto font = font_for_family("");
         return ultralight::String(font->get_font_name().utf8().ptr());
     }
     virtual ultralight::String fallback_font_for_characters(const ultralight::String &characters, int weight,
@@ -32,8 +42,7 @@ class GodotFontLoader : public ultralight::FontLoader {
 
     virtual ultralight::RefPtr<ultralight::FontFile> Load(const ultralight::String &family, int weight,
                                                           bool italic) override {
-        auto theme = godot::ThemeDB::get_singleton()->get_default_theme();
-        auto font = godot::ThemeDB::get_singleton()->get_default_theme()->get_font(family.utf8().data(), "");
+        auto font = font_for_family(family.utf8().data());
 
         if (auto font_file = dynamic_cast<godot::FontFile *>(font.ptr()); font_file != nullptr) {
             if (auto it = _fonts.find(font->get_font_name()); it != _fonts.end()) {

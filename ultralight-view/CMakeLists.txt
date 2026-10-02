@@ -95,6 +95,8 @@ endif()
 
 # Generate source from the docs file
 find_package(Python3 3.4 REQUIRED) # pathlib should be present
+file(GLOB DOC_XML CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/doc_classes/*.xml")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${DOC_XML})
 
 if(GENERATE_TEMPLATE_GET_NODE)
   set(GENERATE_BINDING_PARAMETERS "True")
@@ -111,7 +113,7 @@ execute_process(
   WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 
 # Get Sources
-file(GLOB_RECURSE SOURCES src/*.c**)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.c**)
 file(GLOB_RECURSE HEADERS include/*.h**)
 
 # Define our godot-cpp library

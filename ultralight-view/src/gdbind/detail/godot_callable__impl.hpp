@@ -6,6 +6,7 @@ namespace gdbind {
 inline std::function<godot_callable::Caller> godot_callable::build_caller_impl() {
     return [this](JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount,
                   const JSValueRef arguments[], JSValueRef *exception) -> JSValueRef {
+        if (callable.is_null()) return JSValueMakeNull(ctx);
         godot::Array gd_arguments;
         for (int i = 0; i < argumentCount; i++) {
             gd_arguments.push_back(ulbind17::detail::generic_cast<JSValueRef, godot::Variant>(

@@ -2,6 +2,7 @@
 #include "gdbind/Filesystem.hpp"
 #include "gdbind/FontLoader.hpp"
 #include "gdbind/Logger.hpp"
+#include "gdbind/gpu/GodotGPUDriver.hpp"
 #include "gdbind/PackedByteArraySurface.hpp"
 #include <Ultralight/Ultralight.h>
 
@@ -60,6 +61,7 @@ static void setup_ultralight_platform() {
     platform.set_file_system(new gdbind::setup::EmbeddedResourceFileSystem());
 
     platform.set_logger(GodotLogger::instance());
+    platform.set_gpu_driver(&GodotGPUDriver::instance());
     platform.set_surface_factory(new PackedByteArraySurfaceFactory());
 }
 } // namespace setup

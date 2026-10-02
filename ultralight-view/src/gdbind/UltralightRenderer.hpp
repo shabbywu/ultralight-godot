@@ -6,6 +6,7 @@
 #include "listener/ViewListener.hpp"
 #include <Ultralight/Ultralight.h>
 #include <memory>
+#include <chrono>
 #include <ulbind17/ulbind17.hpp>
 
 using namespace ultralight;
@@ -13,29 +14,34 @@ using namespace godot;
 
 namespace gdbind {
 class UltralightRenderer final {
+  public:
+    struct Listeners {
+        ViewListener view;
+        LoadListener load;
+        NetworkListener network;
+        DownloadListener download;
+    };
     struct CreateViewResult {
         ultralight::RefPtr<ultralight::View> view;
-        ViewListener *viewListener;
-        LoadListener *loadListener;
+        std::shared_ptr<Listeners> listeners;
     };
 
   private:
     ultralight::RefPtr<ultralight::Renderer> render;
-    UltralightRenderer() {
-        render = ultralight::Renderer::Create();
-    }
+    double render_us = 0;
+    UltralightRenderer() = default;
+    static UltralightRenderer &instance() { static UltralightRenderer value; return value; }
     UltralightRenderer(const UltralightRenderer &other) = delete;
     void operator=(const UltralightRenderer &other) = delete;
 
   public:
     static UltralightRenderer *get_singleton() {
-        static UltralightRenderer instance;
-        // re-create render after shutdown()
-        if (instance.render.get() == nullptr) {
-            instance.render = ultralight::Renderer::Create();
-        }
-        return &instance;
+        auto &value = instance();
+        if (value.render.get() == nullptr) value.render = ultralight::Renderer::Create();
+        return &value;
     }
+    static void shutdown_existing() { instance().shutdown(); }
+    static double render_time_us() { return instance().render_us; }
 
     void shutdown() {
         render = nullptr;
@@ -51,8 +57,10 @@ class UltralightRenderer final {
     /// @brief Render all active views to their respective surfaces and render targets.
     /// You should call this once per frame (usually in synchrony with the monitor's refresh rate).
     void updateFrame() {
+        auto start = std::chrono::steady_clock::now();
         render->RefreshDisplay(0);
         render->Render();
+        render_us = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now()-start).count();
     }
 
     ///
@@ -74,15 +82,11 @@ class UltralightRenderer final {
     ///
     CreateViewResult createView(uint32_t width, uint32_t height, const ViewConfig &config, RefPtr<Session> session) {
         auto view = render->CreateView(width, height, config, session);
-        CreateViewResult result = {
-            .view = view,
-            .viewListener = new ViewListener,
-            .loadListener = new LoadListener,
-        };
-        view->set_view_listener(result.viewListener);
-        view->set_load_listener(result.loadListener);
-        view->set_network_listener(new NetworkListener);
-        view->set_download_listener(new DownloadListener);
+        CreateViewResult result{view, std::make_shared<Listeners>()};
+        view->set_view_listener(&result.listeners->view);
+        view->set_load_listener(&result.listeners->load);
+        view->set_network_listener(&result.listeners->network);
+        view->set_download_listener(&result.listeners->download);
         return result;
     }
 
