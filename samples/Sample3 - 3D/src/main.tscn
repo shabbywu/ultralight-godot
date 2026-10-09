@@ -1,6 +1,6 @@
 [gd_scene load_steps=14 format=3 uid="uid://cor1t5knfpfju"]
 
-[ext_resource type="Script" path="res://Main.cs" id="1_4y05d"]
+[ext_resource type="Script" uid="uid://bqsq6g2jxie4o" path="res://Main.cs" id="1_4y05d"]
 [ext_resource type="PackedScene" uid="uid://bw5aubs32yp77" path="res://gui.tscn" id="2_dshhb"]
 
 [sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_co8jp"]
@@ -51,6 +51,7 @@ gravity_scale = 0.1
 freeze = true
 
 [node name="mesh" type="MeshInstance3D" parent="Sphere"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.204687, 0, -0.23627)
 mesh = SubResource("SphereMesh_dbwit")
 skeleton = NodePath("../../Cylinder/mesh")
 

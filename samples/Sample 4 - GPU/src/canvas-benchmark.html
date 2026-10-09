@@ -1,0 +1,161 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Ultralight Canvas benchmark</title>
+<style>
+* { box-sizing: border-box; }
+body { margin:0; padding:24px; font:16px sans-serif; color:#e5efff; background:#0b1523; }
+.shell { padding:20px; width:976px; }
+h1 { margin:0; font-size:26px; color:#e7f5ff; }
+p { margin:10px 0 16px; color:#a6c9e7; }
+button { float:right; padding:9px 14px; border:1px solid #38556e; border-radius:8px; color:#b5f6df; background:#163a32; font:inherit; }
+canvas { display:block; width:932px; height:556px; border-radius:12px; background:#06111f; }
+#vectors { display:none; width:932px; height:556px; border-radius:12px; background:#06111f; }
+.hint { margin-bottom:0; font-size:14px; color:#7896b1; }
+</style>
+<div class="shell">
+<button id="click" onclick="clicked()">Click / 点击 <span id="counter">0</span></button>
+<h1>Canvas · 动态图形压力测试</h1>
+<p id="workload">Paths · gradients · shadows · clipping · alpha compositing</p>
+<canvas id="performance" width="932" height="556"></canvas>
+<svg id="vectors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 932 556"></svg>
+<p class="hint">固定种子的动画 · 相同对象数量与画布尺寸 · 下方性能数据由 Godot 获取</p>
+</div>
+<script>
+window.clickCount = 0;
+function clicked() {
+    document.getElementById('counter').textContent = String(++window.clickCount);
+    if (window.godot_clicked) godot_clicked(window.clickCount);
+}
+var context = document.getElementById('performance').getContext('2d');
+var objectCount = 120;
+var animationFrame = 0;
+var epoch = 0;
+var canvasBenchmarkStats = { frames:0, drawMs:0, maxDrawMs:0 };
+var benchmarkMode = 'canvas';
+var vectorObjects = [];
+function canvasClock() { return window.performance && performance.now ? performance.now() : Date.now(); }
+function random(i, salt) {
+    var value = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453;
+    return value - Math.floor(value);
+}
+function drawCanvasFrame(seconds) {
+    var c = context, width = c.canvas.width, height = c.canvas.height;
+    c.clearRect(0,0,width,height);
+    c.save();
+    // A clipped stage exercises masks alongside hundreds of independent paths.
+    c.beginPath(); c.moveTo(18,0); c.lineTo(width-18,0);
+    c.quadraticCurveTo(width,0,width,18); c.lineTo(width,height-18);
+    c.quadraticCurveTo(width,height,width-18,height); c.lineTo(18,height);
+    c.quadraticCurveTo(0,height,0,height-18); c.lineTo(0,18);
+    c.quadraticCurveTo(0,0,18,0); c.clip();
+    var background = c.createLinearGradient(0,0,width,height);
+    background.addColorStop(0,'#071323'); background.addColorStop(1,'#18354c');
+    c.fillStyle = background; c.fillRect(0,0,width,height);
+    c.strokeStyle = 'rgba(110,180,220,.10)'; c.lineWidth=1;
+    c.beginPath();
+    for(var x=0;x<width;x+=32){c.moveTo(x,0);c.lineTo(x,height);}
+    for(var y=0;y<height;y+=32){c.moveTo(0,y);c.lineTo(width,y);}
+    c.stroke();
+    for(var i=0;i<objectCount;i++) {
+        var phase = random(i,1)*Math.PI*2;
+        var px = width*.5 + Math.sin(seconds*(.15+random(i,2)*.4)+phase)*width*.43;
+        var py = height*.5 + Math.cos(seconds*(.2+random(i,3)*.4)+phase*1.7)*height*.40;
+        var radius = 9+random(i,4)*27;
+        var hue = (i*137.5+seconds*18)%360;
+        c.save(); c.translate(px,py); c.rotate(seconds*(random(i,5)-.5)+phase);
+        c.scale(1+.2*Math.sin(seconds+phase),1+.15*Math.cos(seconds*1.2+phase));
+        c.globalAlpha=.48+random(i,6)*.42;
+        if(i%8===0) c.globalCompositeOperation='lighter';
+        if(i%6===0) { c.shadowColor='hsla('+hue+',90%,65%,.65)'; c.shadowBlur=12; c.shadowOffsetY=4; }
+        var gradient=c.createLinearGradient(-radius,-radius,radius,radius);
+        gradient.addColorStop(0,'hsl('+hue+',90%,76%)');
+        gradient.addColorStop(.55,'hsl('+((hue+35)%360)+',85%,52%)');
+        gradient.addColorStop(1,'hsl('+((hue+70)%360)+',90%,27%)');
+        c.fillStyle=gradient; c.strokeStyle='rgba(225,245,255,.65)'; c.lineWidth=1.5;
+        c.beginPath();
+        if(i%3===0) {
+            // Curved organic shapes use cubic Beziers and tessellated fills.
+            c.moveTo(-radius,0);
+            c.bezierCurveTo(-radius,-radius*1.4,radius,-radius*1.4,radius,0);
+            c.bezierCurveTo(radius,radius*1.1,-radius,radius*1.1,-radius,0);
+        } else if(i%3===1) {
+            for(var point=0;point<10;point++) {
+                var angle=point*Math.PI/5, r=point%2 ? radius*.45 : radius;
+                if(point===0)c.moveTo(Math.cos(angle)*r,Math.sin(angle)*r);
+                else c.lineTo(Math.cos(angle)*r,Math.sin(angle)*r);
+            }
+        } else {
+            c.arc(0,0,radius,0,Math.PI*2,false);
+        }
+        c.closePath(); c.fill(); c.stroke();
+        c.shadowBlur=0; c.globalCompositeOperation='source-over';
+        c.strokeStyle='rgba(255,255,255,.5)'; c.lineWidth=2;
+        c.beginPath();c.arc(0,0,radius*.55,seconds+phase,seconds+phase+Math.PI*1.25);c.stroke();
+        c.restore();
+    }
+    c.restore();
+}
+function drawBenchmarkFrame(seconds) {
+    var begin=canvasClock();
+    if(benchmarkMode==='svg') drawVectorFrame(seconds);
+    else drawCanvasFrame(seconds);
+    var elapsed=canvasClock()-begin;
+    canvasBenchmarkStats.frames++;
+    canvasBenchmarkStats.drawMs+=elapsed;
+    canvasBenchmarkStats.maxDrawMs=Math.max(canvasBenchmarkStats.maxDrawMs,elapsed);
+}
+function tickCanvas(now) {
+    if(!epoch) epoch=now;
+    drawBenchmarkFrame((now-epoch)/1000);
+    animationFrame=requestAnimationFrame(tickCanvas);
+}
+function startCanvasBenchmark(count) {
+    objectCount=Math.max(24,Math.min(960,count||120));
+    document.getElementById('workload').textContent=objectCount+' animated objects · '+(benchmarkMode==='svg' ? 'SVG paths · strokes · transforms · alpha' : 'Canvas curves · gradients · shadows · clip · alpha');
+    if(benchmarkMode==='svg') buildVectors();
+    if(animationFrame) cancelAnimationFrame(animationFrame);
+    epoch=0; animationFrame=requestAnimationFrame(tickCanvas);
+    canvasBenchmarkStats={ frames:0, drawMs:0, maxDrawMs:0 };
+}
+function buildVectors() {
+    var svg=document.getElementById('vectors'), content='';
+    for(var i=0;i<objectCount;i++) {
+        var radius=9+random(i,4)*27, path;
+        if(i%3===0) path='M-1 0 C-1 -1.4 1 -1.4 1 0 C1 1.1 -1 1.1 -1 0Z';
+        else if(i%3===1) {
+            path='';
+            for(var point=0;point<10;point++) {
+                var angle=point*Math.PI/5,r=point%2 ? .45 : 1;
+                path+=(point ? 'L':'M')+(Math.cos(angle)*r)+' '+(Math.sin(angle)*r)+' ';
+            }
+            path+='Z';
+        } else path='M1 0 A1 1 0 1 0 -1 0 A1 1 0 1 0 1 0Z';
+        // Apply alpha per path. Group opacity would introduce hundreds of
+        // intermediate render targets and measure offscreen layer composition.
+        content+='<g id="object'+i+'"><path transform="scale('+radius+')" d="'+path+'" fill="hsl('+((i*137.5)%360)+',85%,62%)" fill-opacity="'+(.48+random(i,6)*.42)+'" stroke="#e1f5ff" stroke-width="'+(1.5/radius)+'"/><path d="M'+radius*.55+' 0 A'+radius*.55+' '+radius*.55+' 0 1 1 0 -'+radius*.55+'" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width="2"/></g>';
+    }
+    svg.innerHTML=content;
+    vectorObjects=[];
+    for(var k=0;k<objectCount;k++) vectorObjects.push({node:document.getElementById('object'+k),phase:random(k,1)*Math.PI*2,sx:.15+random(k,2)*.4,sy:.2+random(k,3)*.4,rotation:random(k,5)-.5});
+    drawVectorFrame(0);
+}
+function drawVectorFrame(seconds) {
+    for(var i=0;i<vectorObjects.length;i++) {
+        var o=vectorObjects[i],px=466+Math.sin(seconds*o.sx+o.phase)*932*.43,py=278+Math.cos(seconds*o.sy+o.phase*1.7)*556*.40;
+        o.node.setAttribute('transform','translate('+px+' '+py+') rotate('+((seconds*o.rotation+o.phase)*180/Math.PI)+') scale('+(1+.2*Math.sin(seconds+o.phase))+' '+(1+.15*Math.cos(seconds*1.2+o.phase))+')');
+    }
+}
+function setBenchmarkMode(mode) {
+    benchmarkMode=mode==='svg' ? 'svg' : 'canvas';
+    document.getElementById('performance').style.display=benchmarkMode==='canvas' ? 'block' : 'none';
+    document.getElementById('vectors').style.display=benchmarkMode==='svg' ? 'block' : 'none';
+    document.querySelector('h1').textContent=benchmarkMode==='svg' ? 'SVG · 矢量绘制压力测试' : 'Canvas · 动态图形压力测试';
+    startCanvasBenchmark(objectCount);
+}
+function stopCanvasBenchmark() {
+    if(animationFrame) cancelAnimationFrame(animationFrame);
+    animationFrame=0;
+}
+// Deterministic first frame; Godot starts the animation on DOMReady.
+drawCanvasFrame(0);
+</script>

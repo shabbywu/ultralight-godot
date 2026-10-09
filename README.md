@@ -33,6 +33,7 @@ Display Web-Content in Godot. You can use html/css/JavaScript as like godot nati
 - [Sample 1 - Load Html And Bind CSharp Callback](samples/Sample%201%20-%20Load%20Html%20And%20Bind%20CSharp%20Callback)
 - [Sample 2 - Grid-based Inventory System](samples/Sample%202%20-%20Inventory%20System)
 - [Sample 3 - 3D](samples/Sample3%20-%203D)
+- [Sample 4 - GPU](samples/Sample%204%20-%20GPU) — GPU/CPU comparison with Canvas/SVG animation, FPS and rendering timings.
 
 ## In Progress
 - [ ] More Samples about how to use ultralight-godot as UI system.

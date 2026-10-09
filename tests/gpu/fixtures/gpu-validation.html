@@ -1,0 +1,38 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Ultralight GPU validation</title>
+<style>
+@font-face { font-family: localChinese; src: url('龙珠体ZHS-Regular.ttf'); }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 24px; color: #21334c; font: 20px localChinese, sans-serif; background: transparent; }
+.panel { width: 720px; padding: 24px; background: rgba(248,250,255,.85); border: 3px solid #3478d4; border-radius: 24px; box-shadow: 8px 10px 18px rgba(15,30,60,.45); }
+h1 { margin: 0 0 14px; font-size: 30px; }
+.row { display: flex; margin: 18px 0; gap: 16px; }
+.tile { width: 145px; height: 100px; border-radius: 18px; padding: 14px; }
+.linear { background: linear-gradient(135deg, #ff3020, #30c070 45%, #2060ff); }
+.radial { background: radial-gradient(ellipse at center, #fff 0%, #8040ff 50%, #101070 100%); }
+.overlay { background: rgba(255,20,50,.45); transform: rotate(-9deg); border: 5px solid rgba(30,60,240,.6); }
+.clip { width: 220px; height: 90px; overflow: hidden; border-radius: 30px; background: #142e50; }
+.clip div { width: 250px; height: 75px; background: linear-gradient(90deg,#ffb000,#00bfff); transform: translate(20px,25px) rotate(18deg); }
+.scroll { width: 630px; height: 110px; overflow: auto; background: #e8edf5; border: 1px solid #9aafc8; }
+.scroll div { height: 330px; background: linear-gradient(#e8edf5,#67c8df); padding: 10px; }
+button { padding: 8px 18px; color: white; background: #1655aa; border: 0; border-radius: 8px; font: inherit; }
+img { width: 96px; height: 72px; image-rendering: auto; }
+</style>
+<div class="panel">
+<h1>Ultralight · 中文字体 · GPU</h1>
+<div>RGBA: <span style="color:red">红</span> <span style="color:green">绿</span> <span style="color:blue">蓝</span> · premultiplied alpha</div>
+<div class="row"><div class="tile linear">Linear</div><div class="tile radial">Radial</div><div class="tile overlay">Alpha / transform</div>
+<img alt="RGB bitmap" src="validation-rgb.png"></div>
+<div class="row"><div class="clip"><div></div></div>
+<svg width="180" height="90" viewBox="0 0 180 90"><path d="M8 72 C20 0 65 0 90 45 S145 85 170 8 L170 80 L8 80Z" fill="#e840b0" stroke="#204080" stroke-width="5"/></svg></div>
+<div class="scroll"><div>Scroll here · 滚动测试<br>1<br>2<br>3<br>4<br>5<br>6<br>Bottom</div></div>
+<p><button id="click" onclick="clicked()">Click / 点击</button> <span id="counter">0</span></p>
+</div>
+<script>
+window.clickCount = 0;
+function clicked() {
+  document.getElementById('counter').textContent = String(++window.clickCount);
+  if (window.godot_clicked) godot_clicked(window.clickCount);
+}
+</script>

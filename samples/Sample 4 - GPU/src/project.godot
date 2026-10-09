@@ -10,14 +10,23 @@ config_version=5
 
 [application]
 
-config/name="3D"
+config/name="Sample 4 - GPU"
 run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.4", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 
+[display]
+
+window/size/viewport_width=1440
+window/size/viewport_height=960
+window/size/window_width_override=1440
+window/size/window_height_override=960
+window/size/min_width=1100
+window/size/min_height=880
+
 [dotnet]
 
-project/assembly_name="3D"
+project/assembly_name="GPU"
 
 [gui]
 

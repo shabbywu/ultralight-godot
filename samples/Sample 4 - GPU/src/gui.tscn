@@ -1,0 +1,47 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Gui.cs" id="1_gui"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_overlay"]
+content_margin_left = 14.0
+content_margin_top = 8.0
+content_margin_right = 14.0
+content_margin_bottom = 8.0
+bg_color = Color(0.025, 0.065, 0.11, 0.96)
+
+[node name="Gui" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_gui")
+
+[node name="SubViewport" type="SubViewport" parent="."]
+transparent_bg = true
+gui_snap_controls_to_pixels = false
+size = Vector2i(1024, 768)
+render_target_update_mode = 4
+
+[node name="UltralightView" type="UltralightView" parent="SubViewport"]
+htmlUrl = "file:///canvas-benchmark.html"
+accelerated = true
+transparent = true
+lazy = true
+offset_right = 1024.0
+offset_bottom = 768.0
+
+[node name="PerformanceOverlay" type="PanelContainer" parent="SubViewport"]
+offset_top = 728.0
+offset_right = 1024.0
+offset_bottom = 768.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_overlay")
+
+[node name="FPSLabel" type="Label" parent="SubViewport/PerformanceOverlay"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.4, 1, 0.85, 1)
+theme_override_font_sizes/font_size = 18
+text = "FPS -- | 显卡模式 | SVG 120"
