@@ -27,7 +27,7 @@ function clicked() {
     if (window.godot_clicked) godot_clicked(window.clickCount);
 }
 var context = document.getElementById('performance').getContext('2d');
-var objectCount = 120;
+var objectCount = 480;
 var animationFrame = 0;
 var epoch = 0;
 var canvasBenchmarkStats = { frames:0, drawMs:0, maxDrawMs:0 };
@@ -110,7 +110,7 @@ function tickCanvas(now) {
     animationFrame=requestAnimationFrame(tickCanvas);
 }
 function startCanvasBenchmark(count) {
-    objectCount=Math.max(24,Math.min(960,count||120));
+    objectCount=Math.max(24,Math.min(1440,count||480));
     document.getElementById('workload').textContent=objectCount+' animated objects · '+(benchmarkMode==='svg' ? 'SVG paths · strokes · transforms · alpha' : 'Canvas curves · gradients · shadows · clip · alpha');
     if(benchmarkMode==='svg') buildVectors();
     if(animationFrame) cancelAnimationFrame(animationFrame);

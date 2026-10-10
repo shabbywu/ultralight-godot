@@ -21,10 +21,14 @@ All controls have buttons; keyboard shortcuts work when the game window has focu
 | --- | --- | --- |
 | Rendering backend | G | 显卡 GPU / 软件 CPU |
 | Animation workload | B | SVG vectors / Canvas |
-| Object count | L | 120 / 240 / 480 |
-| Frame limit | V | Uncapped / 60 FPS with VSync |
+| Object count | L | 120 / 240 / 480 / 960 / 1440 (cycles back to 120) |
+| Godot frame limit | V | Godot uncapped / 60 FPS with VSync |
 
-The default is **GPU + SVG + 120 objects + uncapped**. The backend badge reports the actual backend; unavailable RenderingDevice falls back to CPU. Keep workload and object count identical when switching backends. The HTML uses no network resources, and the internal resolution stays **1024×768** as the window resizes. Click the webpage's counter to verify input forwarding.
+**帧率说明：Ultralight 2.0 免费版不支持解锁网页帧率，最高为 60 FPS。样例的“解锁”按钮仅解除 Godot 的帧率限制，不能解除 SDK 的 60 FPS 上限。**
+
+The default is **GPU + SVG + 480 objects + Godot uncapped**. The public SDK 2.0 package is the Free edition, whose Views are capped at **60 FPS** even when Godot's cap and VSync are disabled. The panel reports the SDK edition limit and the webpage's own animation FPS separately from Godot FPS. Setting `UltralightView.max_render_fps` to 0 removes the per-View cap; the edition limit still applies. See [Ultralight frame limits](https://ultralig.ht/docs/2.0/updating-and-rendering#slowing-down-or-pausing-views).
+
+The backend badge reports the actual backend; unavailable RenderingDevice falls back to CPU. Keep workload and object count identical when switching backends. The HTML uses no network resources, and the internal resolution stays **1024×768** as the window resizes. Click the webpage's counter to verify input forwarding.
 
 Godot provides FPS and frame duration, with a graph of the last 120 frames. The overlay is also appended to the webpage surface using a SubViewport. **网页绘制 CPU 耗时** averages Ultralight RefreshDisplay/Render and command preparation; it excludes completed GPU execution and JavaScript outside those calls. Upload throughput measures GPU resource bitmaps or CPU whole-page pixels according to the active backend. Measurements reset when changing backend, workload or object count.
 

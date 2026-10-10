@@ -7,7 +7,7 @@ namespace GPUExample;
 public partial class Gui : Control {
     [Export] public bool EnableInspector { get; set; }
     [Export] public bool UseGpu { get; set; } = true;
-    [Export(PropertyHint.Range, "24,960,24")] public int CanvasObjects { get; set; } = 120;
+    [Export(PropertyHint.Range, "24,1440,24")] public int CanvasObjects { get; set; } = 480;
     [Export] public bool UseSvg { get; set; } = true;
     [Export] public bool LimitFrameRate { get; set; }
 
@@ -18,10 +18,12 @@ public partial class Gui : Control {
     private static readonly Color Muted = new("93a4bc");
     private static readonly Color Green = new("5ee3b7");
     private static readonly Color Orange = new("ffbc74");
+    private static readonly int[] ObjectCounts = { 120, 240, 480, 960, 1440 };
     private SubViewport _viewport;
     private TextureRect _view, _preview;
     private Label _fpsLabel, _backend, _fpsValue, _frameValue, _cpuValue, _uploadValue, _uploadCaption;
     private Label _status, _description;
+    private Label _pageFpsValue, _sdkLimit;
     private Button _gpuButton, _cpuButton, _svgButton, _canvasButton, _limitButton;
     private readonly List<Button> _loadButtons = new();
     private FrameGraph _graph;
@@ -29,6 +31,8 @@ public partial class Gui : Control {
     private int _samples;
     private long _lastUploadBytes;
     private bool _hasUploadBaseline;
+    private double _lastPageFrames;
+    private bool _hasPageBaseline;
 
     public override void _Ready() {
         _viewport = GetNode<SubViewport>("SubViewport");
@@ -62,6 +66,16 @@ public partial class Gui : Control {
         var color = gpu ? Green : Orange;
         var cpuMs = _cpuUsTotal / _samples / 1000;
         var fps = Engine.GetFramesPerSecond();
+        var pageFrames = _view.Call("execute_script", "typeof canvasBenchmarkStats === 'object' ? canvasBenchmarkStats.frames : 0").AsDouble();
+        _pageFpsValue.Text = _hasPageBaseline && pageFrames >= _lastPageFrames
+            ? $"{(pageFrames - _lastPageFrames) / _elapsed:0.0}" : "--";
+        _lastPageFrames = pageFrames;
+        _hasPageBaseline = true;
+        var sdkEdition = statistics.ContainsKey("sdk_edition") ? statistics["sdk_edition"].AsString() : "1.4";
+        var sdkMaxFps = statistics.ContainsKey("sdk_max_fps") ? statistics["sdk_max_fps"].AsInt64() : 0;
+        _sdkLimit.Text = !statistics.ContainsKey("sdk_max_fps")
+            ? $"网页 SDK：{sdkEdition} · 版本上限未报告"
+            : sdkMaxFps > 0 ? $"网页 SDK：{sdkEdition} · 最高 {sdkMaxFps} FPS" : $"网页 SDK：{sdkEdition} · 无版本帧率上限";
         var bytes = statistics[gpu ? "bitmap_upload_bytes" : "cpu_page_upload_bytes"].AsInt64();
         var mib = _hasUploadBaseline ? Math.Max(0, bytes - _lastUploadBytes) / _elapsed / 1048576 : 0;
         _lastUploadBytes = bytes;
@@ -74,7 +88,7 @@ public partial class Gui : Control {
         _uploadValue.Text = $"{mib:0.0} MiB/s";
         _uploadCaption.Text = gpu ? "GPU 资源位图上传" : "CPU 整页像素上传";
         _fpsLabel.AddThemeColorOverride("font_color", color);
-        _fpsLabel.Text = $"FPS {fps:0}  |  {backend}  |  {(UseSvg ? "SVG" : "Canvas")} {CanvasObjects}  |  绘制 CPU {cpuMs:0.0} ms  |  {(LimitFrameRate ? "60 FPS 限帧" : "帧率已解锁")}";
+        _fpsLabel.Text = $"FPS {fps:0}  |  网页 {_pageFpsValue.Text} FPS  |  {backend}  |  {(UseSvg ? "SVG" : "Canvas")} {CanvasObjects}  |  {(LimitFrameRate ? "Godot 60 FPS" : "Godot 已解锁")}";
         _elapsed = 0;
         _cpuUsTotal = 0;
         _samples = 0;
@@ -142,6 +156,10 @@ public partial class Gui : Control {
         _graph = new FrameGraph { CustomMinimumSize = new Vector2(260, 48), MouseFilter = MouseFilterEnum.Ignore };
         stats.AddChild(_graph);
         Text(stats, "最近 120 帧 · 虚线为 16.7 ms", 12, Muted);
+        _pageFpsValue = Metric(stats, "网页动画 FPS");
+        _pageFpsValue.Name = "PageFPSValue";
+        _sdkLimit = Text(stats, "正在读取网页 SDK 帧率上限…", 12, Muted);
+        _sdkLimit.Name = "SDKFrameLimit";
         _frameValue = Metric(stats, "Godot 帧耗时");
         _cpuValue = Metric(stats, "网页绘制 CPU 耗时");
         var upload = Row(stats, 8);
@@ -161,7 +179,7 @@ public partial class Gui : Control {
         _canvasButton = Action(workloads, "Canvas", "CanvasButton", () => SetWorkload(false));
         Text(controls, "对象数量  ·  L 切换", 13, Muted);
         var loads = Row(controls, 6);
-        foreach (var count in new[] { 120, 240, 480 }) {
+        foreach (var count in ObjectCounts) {
             var button = Action(loads, count.ToString(), "Load" + count, () => SetObjects(count));
             _loadButtons.Add(button);
         }
@@ -170,6 +188,10 @@ public partial class Gui : Control {
             ApplyFrameLimit();
             UpdateControls();
         });
+        var frameLimitNote = Text(controls, "Ultralight 2.0 免费版最高 60 FPS，无法解锁。\n此按钮仅解除 Godot 帧率限制。", 12, Muted);
+        frameLimitNote.Name = "FrameLimitNote";
+        frameLimitNote.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        frameLimitNote.CustomMinimumSize = new Vector2(266, 0);
         _description = Text(controls, "", 13, Muted);
         _description.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         _description.CustomMinimumSize = new Vector2(266, 36);
@@ -227,13 +249,14 @@ public partial class Gui : Control {
         _svgButton.SetPressedNoSignal(UseSvg); _canvasButton.SetPressedNoSignal(!UseSvg);
         foreach (var button in _loadButtons) button.SetPressedNoSignal(button.Text == CanvasObjects.ToString());
         _limitButton.SetPressedNoSignal(!LimitFrameRate);
-        _limitButton.Text = LimitFrameRate ? "60 FPS + VSync  ·  V 解锁" : "帧率已解锁  ·  V 恢复限帧";
+        _limitButton.Text = LimitFrameRate ? "Godot 60 FPS  ·  V 解锁" : "Godot 已解锁  ·  V 限帧";
         _description.Text = UseSvg ? "SVG：曲线路径、描边、变换与透明叠加。" : "Canvas：渐变、阴影、裁剪、曲线与透明混合。";
     }
     private void ResetMeasurements() {
-        _elapsed = 0; _cpuUsTotal = 0; _samples = 0; _hasUploadBaseline = false;
+        _elapsed = 0; _cpuUsTotal = 0; _samples = 0; _hasUploadBaseline = false; _hasPageBaseline = false;
         _graph.ClearFrames();
         _fpsValue.Text = "--"; _frameValue.Text = "-- ms"; _cpuValue.Text = "-- ms"; _uploadValue.Text = "-- MiB/s";
+        _pageFpsValue.Text = "--";
     }
     private void SetBackend(bool gpu) {
         if (UseGpu != gpu) {
@@ -252,10 +275,12 @@ public partial class Gui : Control {
     private void ApplyFrameLimit() {
         Engine.MaxFps = LimitFrameRate ? 60 : 0;
         DisplayServer.WindowSetVsyncMode(LimitFrameRate ? DisplayServer.VSyncMode.Enabled : DisplayServer.VSyncMode.Disabled);
+        if (_view.HasMethod("set_max_render_fps"))
+            _view.Set("max_render_fps", LimitFrameRate ? 60 : 0);
         ResetMeasurements();
     }
     private void StartAnimation() {
-        CanvasObjects = Math.Clamp(CanvasObjects, 24, 960);
+        CanvasObjects = Math.Clamp(CanvasObjects, 24, 1440);
         _view.Call("execute_script", $"if (typeof startCanvasBenchmark === 'function') {{ startCanvasBenchmark({CanvasObjects}); setBenchmarkMode('{(UseSvg ? "svg" : "canvas")}'); }}");
     }
     public override void _Input(InputEvent @event) {
@@ -264,7 +289,7 @@ public partial class Gui : Control {
         switch (code) {
             case Key.G: SetBackend(!UseGpu); break;
             case Key.B: SetWorkload(!UseSvg); break;
-            case Key.L: SetObjects(CanvasObjects >= 480 ? 120 : CanvasObjects * 2); break;
+            case Key.L: SetObjects(ObjectCounts[(Array.IndexOf(ObjectCounts, CanvasObjects) + 1) % ObjectCounts.Length]); break;
             case Key.V: LimitFrameRate = !LimitFrameRate; ApplyFrameLimit(); UpdateControls(); break;
             default: return;
         }
