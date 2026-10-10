@@ -6,6 +6,34 @@ var views: Array[Control] = []
 var ports: Array[SubViewport] = []
 var expect_gpu := "--expect-gpu" in OS.get_cmdline_user_args()
 
+class BridgeProbe extends RefCounted:
+    var label := "中文 🐉"
+    func echo(value): return value
+
+func check_bridge(view: Control) -> void:
+    check(view.call("execute_script", "window.bridgeAtFirstScript") == true, "page globals were not bound before the first script")
+    view.call("bind_func", "godot_echo", func(value): return value)
+    var data = view.call("execute_script", "godot_echo({text:'中文 🐉',number:4294967297,values:[true,null,1.25,{x:'嵌套'}]})")
+    check(data is Dictionary and data.text == "中文 🐉" and data.number == 4294967297 and data.values == [true,null,1.25,{"x":"嵌套"}], "JS nested data/Unicode/large number roundtrip failed")
+    check(view.call("execute_script", "godot_echo(undefined)") == null, "undefined mapping failed")
+    var fn: Callable = view.call("execute_script", "(function(value){return godot_echo(value);})")
+    var returned = fn.call({"数字":4294967297,"值":[true,null,"中文 🐉"]})
+    print("BRIDGE_FN ", fn.is_valid(), " ", returned)
+    check(fn.is_valid() and returned is Dictionary and returned["数字"] == 4294967297 and returned["值"] == [true,null,"中文 🐉"], "JS function Callable conversion failed")
+    check(view.call("execute_script", "(function(){try{var x={};x.self=x;godot_echo(x);return false;}catch(e){return /Cyclic/.test(e.message);}})()") == true, "cyclic JS data did not raise a catchable exception")
+    check(view.call("execute_script", "(function(){try{godot_echo({get x(){throw new Error('getter failed');}});return false;}catch(e){return /getter failed/.test(e.message);}})()") == true, "throwing getter escaped the bridge")
+    var object := BridgeProbe.new()
+    view.call("bind_object", "probe", object)
+    check(view.call("execute_script", "probe.label='修改 🐉';probe.echo(probe.label)") == "修改 🐉" and object.label == "修改 🐉", "Godot object method/property binding failed")
+    object = null
+    check(view.call("execute_script", "(function(){try{probe.echo('freed');return false;}catch(e){return /no longer valid/.test(e.message);}})()") == true, "freed Godot object was accessed")
+    # An old document's handles must expire after real navigation.
+    view.set("htmlUrl", "file:///gpu-validation.html?bridge-navigation=1")
+    await frames(30)
+    await wait_loaded(view)
+    check(not fn.is_valid(), "old JS Callable survived navigation")
+    check(view.call("execute_script", "typeof godot_clicked") == "function", "global callback was not rebound after navigation")
+
 func _initialize() -> void:
     run.call_deferred()
 
@@ -49,8 +77,9 @@ func make_view(gpu: bool) -> Control:
 func wait_loaded(view: Control) -> void:
     # Loading local files and fonts is asynchronous. Bound callback availability
     # also ensures OnWindowObjectReady and the JS bridge have run.
-    for i in 600:
-        await process_frame
+    var deadline := Time.get_ticks_msec() + 10000
+    while Time.get_ticks_msec() < deadline:
+        await frames(1)
         if view.call("execute_script", "typeof clicked === 'function' && !!document.getElementById('click')") == true:
             await frames(20)
             return
@@ -98,6 +127,8 @@ func run() -> void:
         check(float(view.call("execute_script", "document.querySelector('.scroll').scrollTop")) > 0, "scroll failed")
         view.call("execute_script", "document.querySelector('.scroll').scrollTop = 0")
     check(callbacks.size() == 2, "JS callback failed")
+    for view in views:
+        await check_bridge(view)
     if DisplayServer.get_name() != "headless":
         var cpu_image := await snapshot(ports[0], "cpu")
         var gpu_image := await snapshot(ports[1], "gpu")
@@ -106,6 +137,11 @@ func run() -> void:
             for x in range(40, 650, 20):
                 if gpu_image.get_pixel(x, y).a > 0.5: nonempty += 1
         check(nonempty > 100, "GPU output blank")
+        var glyph_pixels := 0
+        for y in range(40, 85):
+            for x in range(770, 1010):
+                if gpu_image.get_pixel(x,y).a > 0.3: glyph_pixels += 1
+        check(glyph_pixels > 100, "small raster glyph atlas output blank")
         if expect_gpu:
             var panel := gpu_image.get_pixel(700,110)
             check(abs(panel.r-248.0/255.0*0.85) < 0.02 and abs(panel.a-0.85) < 0.02, "premultiplied alpha incorrect")
@@ -118,6 +154,22 @@ func run() -> void:
             var b := gpu_image.get_pixel(x, bitmap_y)
             check(abs(a.r-b.r)+abs(a.g-b.g)+abs(a.b-b.b) < 0.12, "bitmap RGB mismatch at %s" % x)
     print("INITIAL_STATS ", JSON.stringify(gpu.call("get_render_statistics")))
+    if expect_gpu:
+        # Exercise actual CSS filter passes, including offscreen targets and Flush.
+        gpu.call("execute_script", "installValidationFilters()")
+        await frames(30)
+        var filtered := await snapshot(ports[1], "gpu-filters")
+        check(filtered.get_pixel(80,610).g > 0.8 and filtered.get_pixel(80,610).b > 0.8, "CSS invert output incorrect")
+        check(filtered.get_pixel(210,610).r > 0.8, "CSS blur output blank")
+        check(filtered.get_pixel(390,638).b > 0.1, "CSS drop-shadow output blank")
+        var programs: Dictionary = gpu.call("get_render_statistics").gpu_draws_by_shader
+        for name in ["Fill", "FilterBasic", "FilterBlur", "FilterDropShadow", "FillPhoton"]:
+            check(programs[name] > 0, "SDK 2 program did not execute: " + name)
+        gpu.call("execute_script", "installValidationPaths()")
+        await frames(30)
+        var path_image := await snapshot(ports[1], "gpu-svg-paths")
+        check(path_image.get_pixel(18,12).g > 0.9, "complex analytic path output incorrect")
+        print("PROGRAM_COVERAGE ", JSON.stringify(gpu.call("get_render_statistics").gpu_draws_by_shader))
     var other_gpu: Control
     var other_uv: Vector4
     if expect_gpu:

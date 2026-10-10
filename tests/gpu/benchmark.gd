@@ -19,7 +19,7 @@ func run() -> void:
         if arg.begins_with("--duration="): duration = int(arg.get_slice("=", 1))
         if arg.begins_with("--fps-limit="): fps_limit = int(arg.get_slice("=", 1))
     check(duration >= 300, "benchmark duration must be at least 300 seconds")
-    check(object_count >= 480 and object_count <= 960, "benchmark requires 480 to 960 objects")
+    check(object_count in [120, 240, 480, 960, 1440], "benchmark requires 120, 240, 480, 960 or 1440 objects")
     check(fps_limit >= 0, "benchmark frame cap must not be negative")
     if not failures.is_empty():
         quit(1)
