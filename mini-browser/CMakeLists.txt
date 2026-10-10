@@ -16,13 +16,16 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(mini-browser EXCLUDE_FROM_ALL
-  src/main.cpp src/Browser.cpp src/Page.cpp src/UI.cpp
+add_library(mini-browser-core STATIC EXCLUDE_FROM_ALL
+  src/Browser.cpp src/Page.cpp src/UI.cpp
   "${GENERATED_ASSETS}/ui.cpp" "${GENERATED_ASSETS}/inspector.cpp")
 target_link_libraries(
-  mini-browser PRIVATE ultralight-sdk-fullstack ulbind17::ulbind17
+  mini-browser-core PUBLIC ultralight-sdk-fullstack ulbind17::ulbind17
   $<IF:$<TARGET_EXISTS:PhysFS::PhysFS>,PhysFS::PhysFS,PhysFS::PhysFS-static>)
-target_include_directories(mini-browser PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(mini-browser-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+
+add_executable(mini-browser EXCLUDE_FROM_ALL src/main.cpp)
+target_link_libraries(mini-browser PRIVATE mini-browser-core)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(TARGET_PATH x11)
@@ -39,3 +42,11 @@ set_target_properties(
                           ${CMAKE_SOURCE_DIR}/bin/mini-browser/${TARGET_PATH})
 
 ultralight_godot_stage_runtime(mini-browser TRUE)
+
+if(BUILD_TESTING)
+  add_executable(mini-browser-smoke EXCLUDE_FROM_ALL tests/smoke.cpp)
+  target_link_libraries(mini-browser-smoke PRIVATE mini-browser-core)
+  set_target_properties(mini-browser-smoke PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tests")
+  ultralight_godot_stage_runtime(mini-browser-smoke TRUE)
+endif()
