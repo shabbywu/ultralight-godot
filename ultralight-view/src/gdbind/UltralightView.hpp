@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <chrono>
+#include <limits>
 #include <godot_cpp/classes/texture2d.hpp>
 #include <godot_cpp/variant/vector4.hpp>
 
@@ -102,6 +103,7 @@ class UltralightView : public TextureRect {
     Ref<Texture2D> texture;
     Ref<ShaderMaterial> gpu_material;
     bool accelerated = false, using_accelerated = false, force_cpu = false;
+    uint32_t max_render_fps = 0;
     uint64_t cpu_upload_bytes = 0, cpu_mipmap_count = 0;
     double cpu_upload_us = 0;
     std::shared_ptr<UltralightRenderer::Listeners> listeners;
@@ -125,10 +127,22 @@ class UltralightView : public TextureRect {
     void setAccelerated(bool enabled) { accelerated = enabled; force_cpu = false; }
     bool getAccelerated() const { return accelerated; }
     bool isAccelerated() const { return view.get() != nullptr && using_accelerated; }
+    void setMaxRenderFps(int64_t fps) {
+        if (fps < 0 || uint64_t(fps) > std::numeric_limits<uint32_t>::max()) {
+            UtilityFunctions::push_error("Ultralight max_render_fps must be a nonnegative 32-bit integer.");
+            return;
+        }
+        max_render_fps = uint32_t(fps);
+        if (view.get()) view->set_max_render_fps(max_render_fps);
+    }
+    int64_t getMaxRenderFps() const { return max_render_fps; }
     Dictionary getRenderStatistics() const {
         Dictionary result;
         const bool gpu_active = isAccelerated();
         result["accelerated"] = gpu_active;
+        result["sdk_edition"] = ULTRALIGHT_EDITION_NAME;
+        result["sdk_max_fps"] = int64_t(ULTRALIGHT_EDITION_MAX_FPS);
+        result["max_render_fps"] = int64_t(max_render_fps);
         result["ultralight_render_us"] = UltralightRenderer::render_time_us();
         result["cpu_page_upload_bytes"] = int64_t(cpu_upload_bytes);
         result["cpu_mipmap_count"] = int64_t(cpu_mipmap_count);
@@ -170,6 +184,7 @@ class UltralightView : public TextureRect {
         resetView();
         auto size = get_size();
         ViewConfig cfg;
+        cfg.max_render_fps = max_render_fps;
         using_accelerated = accelerated && !force_cpu && GodotGPUDriver::instance().initialize();
         if (accelerated && !using_accelerated)
             UtilityFunctions::push_warning("Ultralight: RenderingDevice unavailable; using CPU Surface.");
@@ -374,6 +389,9 @@ class UltralightView : public TextureRect {
         ADD_PROPERTY(PropertyInfo(Variant::BOOL, "accelerated"), "set_accelerated", "get_accelerated");
         ClassDB::bind_method(D_METHOD("is_accelerated"), &UltralightView::isAccelerated);
         ClassDB::bind_method(D_METHOD("get_render_statistics"), &UltralightView::getRenderStatistics);
+        ClassDB::bind_method(D_METHOD("set_max_render_fps", "fps"), &UltralightView::setMaxRenderFps);
+        ClassDB::bind_method(D_METHOD("get_max_render_fps"), &UltralightView::getMaxRenderFps);
+        ADD_PROPERTY(PropertyInfo(Variant::INT, "max_render_fps", PROPERTY_HINT_RANGE, "0,1000,1,or_greater"), "set_max_render_fps", "get_max_render_fps");
         // ultralight region function
         ClassDB::bind_method(D_METHOD("set_html_content", "html"), &UltralightView::setHtmlContent);
         ClassDB::bind_method(D_METHOD("get_html_content"), &UltralightView::getHtmlContent);
