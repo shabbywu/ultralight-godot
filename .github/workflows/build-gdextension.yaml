@@ -46,15 +46,6 @@ jobs:
           Debug_buildPresetAdditionalArgs: '[`--config Debug`]'
           Release_configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"arm64\"', '-DCMAKE_BUILD_TYPE=\"Release\"']"
           Release_buildPresetAdditionalArgs: '[`--config Release`]'
-        - name: 🍎 Build (MacOS, Clang, x86_64)
-          os: macos-latest
-          artifact: macos-x86_64
-          env:
-            VCPKG_DEFAULT_TRIPLET: x64-osx
-          Debug_configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"x86_64\"', '-DCMAKE_BUILD_TYPE=\"Debug\"']"
-          Debug_buildPresetAdditionalArgs: '[`--config Debug`]'
-          Release_configurePresetAdditionalArgs: "['-DCMAKE_OSX_ARCHITECTURES=\"x86_64\"', '-DCMAKE_BUILD_TYPE=\"Release\"']"
-          Release_buildPresetAdditionalArgs: '[`--config Release`]'
 
     env: ${{ matrix.env }}
     steps:
@@ -75,7 +66,7 @@ jobs:
                                   # action you need, `v11` in this case to stay up
                                   # to date with fixes on the v11 branch.
         with:
-          vcpkgGitCommitId: 'd07689ef165f033de5c0710e4f67c193a85373e1'
+          vcpkgGitCommitId: '0699a19d0c6386247ce50d4dedbb8217d484d536'
 
       - name: Install dependencies
         if: ${{ matrix.os == 'ubuntu-24.04' }}
@@ -98,6 +89,20 @@ jobs:
           configurePresetAdditionalArgs: ${{ matrix.Release_configurePresetAdditionalArgs }}
           buildPreset: default
           buildPresetAdditionalArgs: ${{ matrix.Release_buildPresetAdditionalArgs }}
+
+      - name: Run SDK regression tests
+        run: ctest --test-dir build/default -C Release --output-on-failure
+
+      - name: Install Godot for CPU and JS validation
+        if: ${{ matrix.os == 'ubuntu-24.04' }}
+        run: |
+          curl -L --fail https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip -o /tmp/godot.zip
+          unzip /tmp/godot.zip -d /tmp/godot-sdk2
+          chmod +x /tmp/godot-sdk2/Godot_v4.3-stable_linux.x86_64
+
+      - name: Validate Godot CPU fallback and JS compatibility
+        if: ${{ matrix.os == 'ubuntu-24.04' }}
+        run: python3 tests/gpu/run.py --godot /tmp/godot-sdk2/Godot_v4.3-stable_linux.x86_64 --library bin/x11/libultralight-view.linux.release.x86_64.so --backend headless --output build/godot-validation
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -125,8 +130,6 @@ jobs:
           compatibility_minimum = "4.3"
 
           [libraries]
-          macos.debug.x86_64 = "bin/macos-x64/libultralight-view.macos.debug.x86_64.dylib"
-          macos.release.x86_64 = "bin/macos-x64/libultralight-view.macos.release.x86_64.dylib"
           macos.debug.arm64 = "bin/macos-arm64/libultralight-view.macos.debug.arm64.dylib"
           macos.release.arm64 = "bin/macos-arm64/libultralight-view.macos.release.arm64.dylib"
           windows.debug.x86_64 = "bin/win64/ultralight-view.windows.debug.x86_64.dll"

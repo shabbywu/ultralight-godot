@@ -13,7 +13,8 @@ func wait_between_controls() -> void:
     await create_timer(CONTROL_INTERVAL_SECONDS).timeout
 
 func wait_ready(view: Control) -> void:
-    for i in 600:
+    var deadline := Time.get_ticks_msec() + 10000
+    while Time.get_ticks_msec() < deadline:
         await process_frame
         if view.call("execute_script", "typeof clicked === 'function'") == true:
             for j in 20: await process_frame
@@ -31,6 +32,8 @@ func run() -> void:
         quit(1)
         return
     if not view.call("is_accelerated"): failures.append("Sample 4 did not enable GPU")
+    if view.call("execute_script", "objectCount") != 480:
+        failures.append("Sample 4 default object count is not 480")
     view.call("bind_func", "godot_clicked", Callable(self, "clicked"))
     var preview: TextureRect = gui.find_child("Preview", true, false)
     var rect := Vector2(view.call("execute_script", "document.getElementById('click').getBoundingClientRect().left + 20"), view.call("execute_script", "document.getElementById('click').getBoundingClientRect().top + 15"))
@@ -49,6 +52,23 @@ func run() -> void:
     if stats.cpu_page_upload_bytes != 0 or stats.cpu_mipmap_count != 0:
         failures.append("Sample 4 used CPU page uploads/mipmaps")
     print("SAMPLE4_STATS ", JSON.stringify(stats))
+    var sdk_cap := int(stats.get("sdk_max_fps", 0))
+    var sdk_notice: Label = gui.find_child("SDKFrameLimit", true, false)
+    var page_fps: Label = gui.find_child("PageFPSValue", true, false)
+    if sdk_notice == null or page_fps == null or not page_fps.text.is_valid_float():
+        failures.append("page FPS / SDK edition notice missing")
+    elif sdk_cap > 0 and not (str(sdk_cap) + " FPS") in sdk_notice.text:
+        failures.append("SDK edition frame ceiling missing")
+    # Check configuration persistence. Animation rates depend on device load
+    # and counters reset when the sample starts a new animation.
+    view.set("max_render_fps", 30)
+    view.call("init_view")
+    await wait_ready(view)
+    if view.get("max_render_fps") != 30 or view.call("get_render_statistics").max_render_fps != 30:
+        failures.append("View frame cap was lost after reinitialization")
+    view.set("max_render_fps", 0)
+    if view.get("max_render_fps") != 0 or view.call("get_render_statistics").max_render_fps != 0:
+        failures.append("View frame cap could not be removed at runtime")
     for expected_gpu in [false, true]:
         var previous_gpu_material: WeakRef
         if not expected_gpu:
@@ -65,12 +85,13 @@ func run() -> void:
             failures.append("statistics retained the previous backend's GPU fields")
         if previous_gpu_material != null and previous_gpu_material.get_ref() != null:
             failures.append("GPU View material survived CPU backend switch")
-    var load_key := InputEventKey.new()
-    load_key.physical_keycode = KEY_L; load_key.keycode = KEY_L; load_key.pressed = true
-    root.push_input(load_key)
-    await wait_between_controls()
-    if view.call("execute_script", "objectCount") != 240:
-        failures.append("L workload toggle failed")
+    for expected_count in [960, 1440, 120, 240, 480]:
+        var load_key := InputEventKey.new()
+        load_key.physical_keycode = KEY_L; load_key.keycode = KEY_L; load_key.pressed = true
+        root.push_input(load_key)
+        await wait_between_controls()
+        if view.call("execute_script", "objectCount") != expected_count or view.call("execute_script", "vectorObjects.length") != expected_count:
+            failures.append("L workload cycle failed: " + str(expected_count))
     var workload_key := InputEventKey.new()
     workload_key.physical_keycode = KEY_B; workload_key.keycode = KEY_B; workload_key.pressed = true
     root.push_input(workload_key)
@@ -87,6 +108,8 @@ func run() -> void:
         await wait_between_controls()
         if Engine.max_fps != expected_cap:
             failures.append("V frame cap toggle failed")
+        if view.get("max_render_fps") != expected_cap:
+            failures.append("V did not update the View frame cap")
     # Exercise clickable controls independently of keyboard shortcuts.
     for item in [["CPUButton", false], ["GPUButton", true]]:
         var button: Button = gui.find_child(item[0], true, false)
@@ -94,13 +117,16 @@ func run() -> void:
         await wait_ready(view)
         if view.call("is_accelerated") != item[1]:
             failures.append("clickable backend control failed: " + item[0])
-    await click_at(gui.find_child("Load480", true, false).get_global_rect().get_center())
-    print("SAMPLE4_LOAD_CLICK ", view.call("execute_script", "objectCount"))
+    for expected_count in [120, 240, 480, 960, 1440]:
+        await click_at(gui.find_child("Load" + str(expected_count), true, false).get_global_rect().get_center())
+        if view.call("execute_script", "objectCount") != expected_count:
+            failures.append("Canvas clickable object count mismatch: " + str(expected_count))
+        print("SAMPLE4_LOAD_CLICK ", view.call("execute_script", "objectCount"))
     await click_at(gui.find_child("SVGButton", true, false).get_global_rect().get_center())
-    if view.call("execute_script", "objectCount") != 480 or view.call("execute_script", "benchmarkMode") != "svg":
+    if view.call("execute_script", "objectCount") != 1440 or view.call("execute_script", "benchmarkMode") != "svg":
         failures.append("clickable workload/load controls failed")
     print("SAMPLE4_CONTROLS ", view.call("execute_script", "objectCount"), " ", view.call("execute_script", "benchmarkMode"))
-    if view.call("execute_script", "vectorObjects.length") != 480:
+    if view.call("execute_script", "vectorObjects.length") != 1440:
         failures.append("SVG object count mismatch")
     await click_at(gui.find_child("LimitButton", true, false).get_global_rect().get_center())
     if Engine.max_fps != 60: failures.append("clickable frame cap control failed")

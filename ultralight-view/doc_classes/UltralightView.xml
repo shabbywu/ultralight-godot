@@ -18,7 +18,7 @@
         <method name="get_render_statistics" qualifiers="const">
             <return type="Dictionary" />
             <description>
-                Return actual backend, Ultralight render time in microseconds, and this View's CPU upload counters. Only an active accelerated View adds GPU fields (gpu_available, bitmap_upload_bytes, geometry_upload_bytes, state_upload_bytes, draws, batches, feedback_copies, render_passes, rd_record_us, gpu_us). CPU, uninitialized and fallback Views omit those fields and do not query GPUDriver. GPU counters and Ultralight render timing cover all Views; CPU page upload counters cover this View and survive reinitialization. A zero GPU timing sample may mean timestamps are unavailable. Resource bitmap uploads can still occur in accelerated mode, including Canvas content.
+                Return actual backend, SDK edition and edition frame-rate ceiling (sdk_edition, sdk_max_fps; 0 means no edition ceiling), requested per-View max_render_fps, Ultralight render time in microseconds, and this View's CPU upload counters. Only an active accelerated View adds GPU fields (gpu_available, bitmap_upload_bytes, geometry_upload_bytes, state_upload_bytes, draws, batches, feedback_copies, render_passes, rd_record_us, gpu_us). CPU, uninitialized and fallback Views omit those fields and do not query GPUDriver. GPU counters and Ultralight render timing cover all Views; CPU page upload counters cover this View and survive reinitialization. A zero GPU timing sample may mean timestamps are unavailable. Resource bitmap uploads can still occur in accelerated mode, including Canvas content.
             </description>
         </method>
         <method name="set_html_content">
@@ -116,6 +116,9 @@
         </method>
     </methods>
     <members>
+        <member name="max_render_fps" type="int" setter="set_max_render_fps" getter="get_max_render_fps" default="0">
+            Limit this View's animation and repaint rate. Changing this property applies immediately and survives [method init_view]. Set 0 to remove the per-View limit; the SDK edition's maximum FPS still applies (60 for the public Free edition). Godot's frame cap and VSync are independent.
+        </member>
         <member name="accelerated" type="bool" setter="set_accelerated" getter="get_accelerated" default="false">
             Request GPU rendering. Set before [method init_view]; changing this property requires reinitializing the View. Compatibility, headless, and GPU initialization failure use the CPU Surface. Use [method is_accelerated] to query the active backend. Reinitializing reloads the page and resets its JavaScript state.
         </member>

@@ -8,7 +8,11 @@
                 "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
                 "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/bin/",
                 "CMAKE_BUILD_TYPE": "Debug",
-                "VCPKG_OVERLAY_PORTS": "${sourceDir}/.vcpkg/ports/godot-cpp"
+                "VCPKG_OVERLAY_PORTS": "${sourceDir}/.vcpkg/ports/godot-cpp",
+                "ULTRALIGHT_SDK_VERSION": "2.0.0-beta.2",
+                "COPY_ULTRALIGHT_BINARY": "ON",
+                "GODOT_DISABLE_EXCEPTIONS": "OFF",
+                "BUILD_TESTING": "ON"
             },
             "environment": {
                 "VCPKG_OVERLAY_PORTS": "${sourceDir}/.vcpkg/ports/godot-cpp"

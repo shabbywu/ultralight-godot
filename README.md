@@ -12,9 +12,9 @@ Display Web-Content in Godot. You can use html/css/JavaScript as like godot nati
 ## Features
 - Render html in godot.
 - Multiple platform support:
-  - Windows(x86_64 is tested)
-  - Macos(x86_64 is tested)
-  - ❕Linux (build successfully but untested, **if anyone can test it, please let me know**)
+  - Windows x86_64
+  - macOS arm64 (Apple Silicon)
+  - Linux x86_64
 - Use CSS to control styles, which is easier to use and controllable than Godot's native UI.
 - JavaScript Interop with godot, just like native part of godot.
   - Execute JavaScript from csharp/gdscript.
@@ -28,6 +28,12 @@ Display Web-Content in Godot. You can use html/css/JavaScript as like godot nati
     - Keyboard Input
     - Mouse Scroll Input
 - Remote UI Inspector, aka, DevTools.
+
+## SDK compatibility
+
+The current source targets **Ultralight 2.0.0-beta.2**. Install the extension together with its matching SDK libraries.
+
+**Ultralight Free edition limits View animations and repaints to 60 FPS.** Removing Godot's frame cap, disabling VSync or setting `max_render_fps` to 0 cannot remove the SDK edition limit.
 
 ## Samples
 - [Sample 1 - Load Html And Bind CSharp Callback](samples/Sample%201%20-%20Load%20Html%20And%20Bind%20CSharp%20Callback)

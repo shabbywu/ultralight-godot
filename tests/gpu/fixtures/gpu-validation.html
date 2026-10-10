@@ -18,7 +18,9 @@ h1 { margin: 0 0 14px; font-size: 30px; }
 .scroll div { height: 330px; background: linear-gradient(#e8edf5,#67c8df); padding: 10px; }
 button { padding: 8px 18px; color: white; background: #1655aa; border: 0; border-radius: 8px; font: inherit; }
 img { width: 96px; height: 72px; image-rendering: auto; }
+.small-text { position: absolute; left: 770px; top: 40px; font-size: 12px; color: #1655aa; }
 </style>
+<div class="small-text">Small raster glyphs<br>小字号文字 · 12px</div>
 <div class="panel">
 <h1>Ultralight · 中文字体 · GPU</h1>
 <div>RGBA: <span style="color:red">红</span> <span style="color:green">绿</span> <span style="color:blue">蓝</span> · premultiplied alpha</div>
@@ -30,9 +32,41 @@ img { width: 96px; height: 72px; image-rendering: auto; }
 <p><button id="click" onclick="clicked()">Click / 点击</button> <span id="counter">0</span></p>
 </div>
 <script>
+window.bridgeAtFirstScript = typeof __godot_view_instance === 'object' && typeof godot_clicked === 'function';
 window.clickCount = 0;
 function clicked() {
   document.getElementById('counter').textContent = String(++window.clickCount);
   if (window.godot_clicked) godot_clicked(window.clickCount);
+}
+
+function installValidationFilters() {
+  var filters = document.createElement('div');
+  filters.style.cssText = 'position:absolute;top:580px;left:50px;display:flex;gap:50px';
+  ['invert(1)', 'blur(5px)', 'drop-shadow(8px 8px 5px blue)'].forEach(function(filter) {
+    var tile = document.createElement('div');
+    tile.style.cssText = 'width:80px;height:60px;background:red';
+    tile.style.filter = filter;
+    filters.appendChild(tile);
+  });
+  document.body.appendChild(filters);
+}
+
+function installValidationPaths() {
+  var shape = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  shape.setAttribute('width', '700');
+  shape.setAttribute('height', '500');
+  shape.style.cssText = 'position:absolute;left:0;top:0';
+  var path = document.createElementNS(shape.namespaceURI, 'path');
+  var data = '';
+  for (var y = 0; y < 20; y++) {
+    for (var x = 0; x < 28; x++) {
+      var px = 12 + x * 24, py = 12 + y * 24;
+      data += 'M' + px + ' ' + py + 'c0 -8 12 -8 12 0s-12 8 -12 0z';
+    }
+  }
+  path.setAttribute('d', data);
+  path.setAttribute('fill', '#00ff00');
+  shape.appendChild(path);
+  document.body.appendChild(shape);
 }
 </script>

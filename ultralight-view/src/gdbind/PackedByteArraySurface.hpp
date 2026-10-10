@@ -1,12 +1,14 @@
 #pragma once
 #include <Ultralight/platform/Surface.h>
 #include <godot_cpp/variant/packed_byte_array.hpp>
+#include <cstring>
 namespace gdbind {
 class PackedByteArraySurface : public ultralight::Surface {
   public:
     godot::PackedByteArray data;
     uint32_t _width;
     uint32_t _height;
+    void *locked_pixels = nullptr;
 
   public:
     PackedByteArraySurface(uint32_t width, uint32_t height) : _width(width), _height(height) {
@@ -36,10 +38,16 @@ class PackedByteArraySurface : public ultralight::Surface {
     }
 
     virtual void *LockPixels() override {
-        return data.ptrw();
+        locked_pixels = data.ptrw();
+        return locked_pixels;
     }
 
-    virtual void UnlockPixels() override {};
+    virtual void UnlockPixels() override { locked_pixels = nullptr; }
+
+    bool Scroll(const ultralight::IntRect &rect, int dx, int dy) override {
+        ultralight::Surface::ShiftPixels(locked_pixels, row_bytes(), rect, dx, dy);
+        return false; // The display texture is updated from the dirty pixel buffer.
+    }
 
     virtual void Resize(uint32_t width, uint32_t height) override {
         _width = width;

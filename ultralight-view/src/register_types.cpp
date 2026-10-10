@@ -11,7 +11,7 @@
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/godot.hpp>
 
-#include "gdbind/detail/cast.hpp"
+#include "gdbind/detail/JavaScriptBridge.hpp"
 
 #include "doc_data_registration.hpp"
 #include "gdbind/CPUSurfaceShader.hpp"
@@ -19,7 +19,6 @@
 #include "gdbind/UltralightRenderer.hpp"
 #include "gdbind/UltralightSingleton.hpp"
 #include "gdbind/UltralightView.hpp"
-#include "gdbind/detail/js_callable_trampoline.hpp"
 #include "setup.hpp"
 
 using namespace godot;
@@ -33,12 +32,13 @@ static void initialize_module(ModuleInitializationLevel p_level) {
         godot::Engine::get_singleton()->register_singleton("UltralightSingleton", singleton);
 
         GDREGISTER_CLASS(gdbind::JavascrtipCallableTrampoline);
+        GDREGISTER_CLASS(gdbind::JavaScriptPromise);
     }
 }
 
 static void uninitialize_module(ModuleInitializationLevel p_level) {
     if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-        gdbind::JavascrtipCallableTrampoline::freeInstances();
+        gdbind::BridgeContext::shutdown();
         auto singleton = static_cast<gdbind::UltralightSingleton *>(
             godot::Engine::get_singleton()->get_singleton("UltralightSingleton"));
         godot::Engine::get_singleton()->unregister_singleton("UltralightSingleton");

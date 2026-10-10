@@ -10,7 +10,7 @@ using namespace ultralight;
  */
 class Page : public ViewListener, public LoadListener, public DownloadListener, public NetworkListener {
   public:
-    Page(UI *ui, uint32_t width, uint32_t height, int x, int y);
+    explicit Page(UI *ui);
     ~Page();
 
     void set_ready_to_close(bool ready) {
@@ -21,7 +21,7 @@ class Page : public ViewListener, public LoadListener, public DownloadListener, 
     }
 
     RefPtr<View> view() {
-        return overlay_->view();
+        return panel_->view();
     }
 
     void Show();
@@ -31,14 +31,6 @@ class Page : public ViewListener, public LoadListener, public DownloadListener, 
     void ToggleInspector();
 
     bool IsInspectorShowing() const;
-
-    IntRect GetInspectorResizeDragHandle() const;
-
-    int GetInspectorHeight() const;
-
-    void SetInspectorHeight(int height);
-
-    void Resize(uint32_t width, uint32_t height);
 
     // Inherited from ViewListener
     virtual void OnChangeTitle(View *caller, const String &title) override;
@@ -79,9 +71,8 @@ class Page : public ViewListener, public LoadListener, public DownloadListener, 
 
   protected:
     UI *ui_;
-    RefPtr<Overlay> overlay_;
-    RefPtr<Overlay> inspector_overlay_;
+    RefPtr<Panel> panel_;
+    RefPtr<Panel> inspector_panel_;
     bool ready_to_close_ = false;
-    uint32_t container_width_, container_height_;
     DownloadId next_download_id_ = 0;
 };

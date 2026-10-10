@@ -1,7 +1,6 @@
 #pragma once
 #include <Ultralight/Ultralight.h>
 #include <functional>
-#include <ulbind17/detail/function/type_traits.hpp>
 namespace gdbind {
 struct LoadListener : public ultralight::LoadListener {
 
