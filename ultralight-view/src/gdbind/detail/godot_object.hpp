@@ -1,78 +1,33 @@
 #pragma once
-#include "cast__def.hpp"
-#include "ulbind17/types/jsclass__def.hpp"
-#include <godot_cpp/core/class_db.hpp>
-#include <godot_cpp/variant/utility_functions.hpp>
-using namespace godot;
+#include "JavaScriptBridge__def.hpp"
+#include "js_promise__def.hpp"
+#include "js_string.hpp"
+#include <godot_cpp/core/object.hpp>
+#include <godot_cpp/variant/callable.hpp>
 
 namespace gdbind {
-class DBBaseClass {};
-
-class GodotObject : public ulbind17::detail::Class<godot::Object> {
-  public:
-    virtual JSObjectRef makeInstance(JSContextRef ctx, void *self) override {
-        auto obj = (godot::Object *)self;
-        return JSObjectMake(ctx, holder->value, self);
-    }
-
-    virtual JSValueRef getProperty(JSContextRef ctx, JSObjectRef object, std::string propertyName,
-                                   JSValueRef *exception) override {
-        auto instance = (godot::Object *)JSObjectGetPrivate(object);
-        godot::String gd_propertyName(propertyName.data());
-        return ulbind17::detail::generic_cast<godot::Variant, JSValueRef>(ctx,
-                                                                          std::move(instance->get(gd_propertyName)));
-    }
-
-    virtual bool setProperty(JSContextRef ctx, JSObjectRef object, std::string propertyName, JSValueRef value,
-                             JSValueRef *exception) override {
-        auto instance = (godot::Object *)JSObjectGetPrivate(object);
-        godot::String gd_propertyName(propertyName.data());
-        instance->set(gd_propertyName,
-                      ulbind17::detail::generic_cast<JSValueRef, godot::Variant>(ctx, std::forward<JSValueRef>(value)));
-        return true;
-    }
-
-    virtual void finalizeInstance(JSObjectRef object) override {
-        auto p = (godot::Object *)JSObjectGetPrivate(object);
-    }
-
-  public:
-    GodotObject(JSContextRef ctx) : Class(ctx) {};
-
-  public:
-    static std::shared_ptr<GodotObject> defindJSClass(JSContextRef ctx) {
-        static std::shared_ptr<GodotObject> clazz;
-        static JSClassDefinition def;
-        if (clazz == nullptr) {
-            clazz = std::make_shared<GodotObject>(ctx);
-            memset(&def, 0, sizeof(def));
-            def.className = "GodotObject";
-            def.version = 0;
-            def.attributes = kJSClassAttributeNone;
-            def.getProperty = [](JSContextRef ctx, JSObjectRef object, JSStringRef propertyName,
-                                 JSValueRef *exception) {
-                auto clazz = ulbind17::detail::ClassRegistry::getIntance().findJSClass<godot::Object>();
-                auto name = ulbind17::detail::String(ctx, propertyName).value();
-                return clazz->getProperty(ctx, object, name, exception);
-            };
-            def.setProperty = [](JSContextRef ctx, JSObjectRef object, JSStringRef propertyName, JSValueRef value,
-                                 JSValueRef *exception) {
-                auto clazz = ulbind17::detail::ClassRegistry::getIntance().findJSClass<godot::Object>();
-                auto name = ulbind17::detail::String(ctx, propertyName).value();
-                return clazz->setProperty(ctx, object, name, value, exception);
-            };
-            def.finalize = [](JSObjectRef object) {
-                auto clazz = ulbind17::detail::ClassRegistry::getIntance().findJSClass<godot::Object>();
-                clazz->finalizeInstance(object);
-            };
-            def.initialize = [](JSContextRef ctx, JSObjectRef object) {
-                auto clazz = ulbind17::detail::ClassRegistry::getIntance().findJSClass<godot::Object>();
-                clazz->initializeInstance(ctx, object);
-            };
-            clazz->end(def);
-            ulbind17::detail::ClassRegistry::getIntance().registerJSClass<godot::Object>(clazz);
-        }
-        return clazz;
-    };
-};
+inline JSValueRef BridgeContext::writeObject(godot::Object *object) {
+    auto ctx = runtime_->context();
+    if (!object) return JSValueMakeNull(ctx);
+    if (auto promise = godot::Object::cast_to<JavaScriptPromise>(object)) return promise->value(this);
+    godot::ObjectID id(object->get_instance_id());
+    return runtime_->makeObject(id,
+        [weak = weak_from_this(), id](JSContextRef, JSStringRef name) -> JSValueRef {
+            auto state = weak.lock();
+            auto *instance = godot::ObjectDB::get_instance(id);
+            if (!state || !state->active() || !instance)
+                throw std::runtime_error("Godot object is no longer valid");
+            auto property = godot_string(name);
+            return state->toJS(instance->has_method(property)
+                ? godot::Variant(godot::Callable(instance, property)) : instance->get(property));
+        },
+        [weak = weak_from_this(), id](JSContextRef, JSStringRef name, JSValueRef value) {
+            auto state = weak.lock();
+            auto *instance = godot::ObjectDB::get_instance(id);
+            if (!state || !state->active() || !instance)
+                throw std::runtime_error("Godot object is no longer valid");
+            instance->set(godot_string(name), state->toGodot(value));
+            return true;
+        });
+}
 } // namespace gdbind

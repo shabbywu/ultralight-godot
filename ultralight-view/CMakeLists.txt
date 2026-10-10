@@ -6,13 +6,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(TARGET_PATH win64)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  if(CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
-    set(TARGET_PATH macos-x64)
-  elseif(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
-    set(TARGET_PATH macos-arm64)
-  else()
-    set(TARGET_PATH macos)
-  endif()
+  set(TARGET_PATH macos-arm64)
 else()
   message(FATAL_ERROR "Not implemented support for ${CMAKE_SYSTEM_NAME}")
 endif()
@@ -62,9 +56,9 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   # endif()
 else()
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set(GODOT_LINKER_FLAGS "-static-libgcc -static-libstdc++ -Wl,-R,'$$ORIGIN'")
+    set(GODOT_LINKER_FLAGS "-static-libgcc -static-libstdc++")
   else()
-    set(GODOT_LINKER_FLAGS "-framework Cocoa -Wl,-undefined,'$$ORIGIN'")
+    set(GODOT_LINKER_FLAGS "-framework Cocoa")
   endif()
 
   set(GODOT_COMPILE_FLAGS "-fPIC -g -Wwrite-strings")
@@ -77,24 +71,25 @@ else()
   endif(CMAKE_BUILD_TYPE MATCHES Debug)
 endif()
 
-# Disable exception handling. Godot doesn't use exceptions anywhere, and this
-# saves around 20% of binary size and very significant build time (GH-80513).
-option(GODOT_DISABLE_EXCEPTIONS ON "Force disabling exception handling code")
-
+# The bridge reports conversion and script failures through C++ exceptions.
+option(GODOT_DISABLE_EXCEPTIONS "Force disabling exception handling code" OFF)
 if(GODOT_DISABLE_EXCEPTIONS)
-  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-    set(GODOT_COMPILE_FLAGS "${GODOT_COMPILE_FLAGS} -D_HAS_EXCEPTIONS=0")
-  else()
-    set(GODOT_COMPILE_FLAGS "${GODOT_COMPILE_FLAGS} -fno-exceptions")
-  endif()
-else()
-  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-    set(GODOT_COMPILE_FLAGS "${GODOT_COMPILE_FLAGS} /EHsc")
-  endif()
+  message(FATAL_ERROR "Ultralight 2.x bridge headers require C++ exceptions; use GODOT_DISABLE_EXCEPTIONS=OFF")
+endif()
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  set(GODOT_COMPILE_FLAGS "${GODOT_COMPILE_FLAGS} /EHsc /utf-8")
 endif()
 
 # Generate source from the docs file
-find_package(Python3 3.4 REQUIRED) # pathlib should be present
+find_package(Python3 3.8 REQUIRED COMPONENTS Interpreter)
+set(SDK_SHADER_HEADERS "${ULTRALIGHT_GODOT_SDK_ROOT}/platform/shaders/generated/headers/glsl")
+file(GLOB SDK_SHADER_INPUTS "${SDK_SHADER_HEADERS}/*.h")
+set(GENERATED_SHADERS "${CMAKE_CURRENT_BINARY_DIR}/generated/SDKShaders.hpp")
+add_custom_command(OUTPUT "${GENERATED_SHADERS}"
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_LIST_DIR}/generate_sdk_shaders.py"
+    "${SDK_SHADER_HEADERS}" "${GENERATED_SHADERS}"
+  DEPENDS ${SDK_SHADER_INPUTS} "${CMAKE_CURRENT_LIST_DIR}/generate_sdk_shaders.py" VERBATIM)
 file(GLOB DOC_XML CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/doc_classes/*.xml")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${DOC_XML})
 
@@ -117,10 +112,10 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.c**)
 file(GLOB_RECURSE HEADERS include/*.h**)
 
 # Define our godot-cpp library
-add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
+add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS} "${GENERATED_SHADERS}")
 
 target_include_directories(${PROJECT_NAME} SYSTEM
-                           PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
+                           PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src ${CMAKE_CURRENT_BINARY_DIR}/generated)
 target_link_libraries(${PROJECT_NAME} godot-cpp::godot-cpp ulbind17::ulbind17)
 
 # Create the correct name (godot.os.build_type.system_bits) Synchronized with
@@ -151,13 +146,13 @@ set_property(
   PROPERTY LINK_FLAGS ${GODOT_LINKER_FLAGS})
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64")
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
     set(GODOT_ARCHITECTURE_TYPE "x86_64")
-  elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86")
+  elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86")
     set(GODOT_ARCHITECTURE_TYPE "x86_32")
-  elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "armv7")
+  elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "armv7")
     set(GODOT_ARCHITECTURE_TYPE "arm32")
-  elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64")
+  elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
     set(GODOT_ARCHITECTURE_TYPE "arm64")
   else()
     message(STATUS "host processor architecture is unknown")
@@ -167,7 +162,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(OUTPUT_NAME
       ${PROJECT_NAME}.linux.${BUILD_TYPE}.${GODOT_ARCHITECTURE_TYPE})
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-  if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "AMD64")
+  if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
     set(GODOT_ARCHITECTURE_TYPE "x86_64")
   else()
     set(GODOT_ARCHITECTURE_TYPE "x86_32")
@@ -176,7 +171,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(OUTPUT_NAME
       ${PROJECT_NAME}.windows.${BUILD_TYPE}.${GODOT_ARCHITECTURE_TYPE})
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  set(GODOT_ARCHITECTURE_TYPE ${CMAKE_OSX_ARCHITECTURES})
+  set(GODOT_ARCHITECTURE_TYPE arm64)
   set(OUTPUT_NAME
       ${PROJECT_NAME}.macos.${BUILD_TYPE}.${GODOT_ARCHITECTURE_TYPE})
 else()
@@ -186,19 +181,9 @@ endif()
 set_target_properties(
   ${PROJECT_NAME}
   PROPERTIES OUTPUT_NAME ${OUTPUT_NAME}
-             INSTALL_RPATH "@loader_path;"
              BUILD_WITH_INSTALL_RPATH TRUE)
 
 install(TARGETS ${PROJECT_NAME}
         DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/lib)
 
-# Copy all binaries to target directory
-if(COPY_ULTRALIGHT_BINARY)
-  get_target_property(ULTRALIGHT_BINARY_DIR ultralight-sdk
-                      ULTRALIGHT_BINARY_DIR)
-  add_custom_command(
-    TARGET ${PROJECT_NAME}
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHT_BINARY_DIR}"
-            $<TARGET_FILE_DIR:${PROJECT_NAME}>)
-endif(COPY_ULTRALIGHT_BINARY)
+ultralight_godot_stage_runtime(${PROJECT_NAME} FALSE)

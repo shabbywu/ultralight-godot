@@ -6,47 +6,20 @@
 #include "gdbind/PackedByteArraySurface.hpp"
 #include <Ultralight/Ultralight.h>
 
-#include <ulbind17/resources/cacert.h>
-#include <ulbind17/resources/icudt67l.h>
+#include <ulbind17/resources/embedded/SDKResources.hpp>
 
 namespace gdbind {
 namespace setup {
 
 struct EmbeddedResourceFileSystem : public GodotFileSystem {
-  public:
-    virtual bool FileExists(const ultralight::String &file_path) override {
-        std::string p = file_path.utf8().data();
-        {
-            auto &icudt67l = bin2cpp::getIcudt67lDatFile();
-            if (p == icudt67l.getFileName()) {
-                return true;
-            }
-        }
-        {
-            auto &cacert = bin2cpp::getCacertPemFile();
-            if (p == cacert.getFileName()) {
-                return true;
-            }
-        }
-        return GodotFileSystem::FileExists(file_path);
+    ulbind17::resources::embedded::SDKResources resources;
+    explicit EmbeddedResourceFileSystem(const ultralight::String &prefix) : resources(prefix.utf8().data()) {}
+    bool FileExists(const ultralight::String &path) override {
+        return resources.FileExists(path) || GodotFileSystem::FileExists(path);
     }
-
-    virtual ultralight::RefPtr<ultralight::Buffer> OpenFile(const ultralight::String &file_path) override {
-        std::string p = file_path.utf8().data();
-        {
-            auto &icudt67l = bin2cpp::getIcudt67lDatFile();
-            if (p == icudt67l.getFileName()) {
-                return ultralight::Buffer::Create((void *)icudt67l.getBuffer(), icudt67l.getSize(), nullptr, nullptr);
-            }
-        }
-
-        {
-            auto &cacert = bin2cpp::getCacertPemFile();
-            if (p == cacert.getFileName()) {
-                return ultralight::Buffer::Create((void *)cacert.getBuffer(), cacert.getSize(), nullptr, nullptr);
-            }
-        }
-        return GodotFileSystem::OpenFile(file_path);
+    ultralight::RefPtr<ultralight::Buffer> OpenFile(const ultralight::String &path) override {
+        auto resource = resources.OpenFile(path);
+        return resource.get() ? resource : GodotFileSystem::OpenFile(path);
     }
 };
 
@@ -58,7 +31,7 @@ static void setup_ultralight_platform() {
     ultralight::Config my_config;
     platform.set_config(my_config);
     platform.set_font_loader(new gdbind::GodotFontLoader());
-    platform.set_file_system(new gdbind::setup::EmbeddedResourceFileSystem());
+    platform.set_file_system(new gdbind::setup::EmbeddedResourceFileSystem(my_config.resource_path_prefix));
 
     platform.set_logger(GodotLogger::instance());
     platform.set_gpu_driver(&GodotGPUDriver::instance());

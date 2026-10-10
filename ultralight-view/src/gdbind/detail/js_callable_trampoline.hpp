@@ -1,57 +1,36 @@
 #pragma once
-#include "js_callable.hpp"
-#include <godot_cpp/classes/ref_counted.hpp>
+#include "js_callable_trampoline__def.hpp"
+#include "JavaScriptBridge__def.hpp"
 #include <godot_cpp/core/class_db.hpp>
-#include <map>
-using namespace godot;
+#include <godot_cpp/variant/utility_functions.hpp>
+
 namespace gdbind {
-/// @brief godot-csharp does not support CallableCustom now, see also: https://github.com/godotengine/godot/issues/97358
-///        So here convert an CallableCustom to Object method, wrap it as member method.
-class JavascrtipCallableTrampoline : public godot::RefCounted {
-    GDCLASS(JavascrtipCallableTrampoline, godot::RefCounted);
+inline void JavascrtipCallableTrampoline::configure(std::weak_ptr<BridgeContext> state, JSObjectRef fn) {
+    context = state;
+    function = fn;
+}
 
-  private:
-    // TODO: find a better way to maintain refcounted
-    static inline std::map<JSObjectRef, godot::Ref<JavascrtipCallableTrampoline>> instances;
+inline void JavascrtipCallableTrampoline::_bind_methods() {
+    godot::ClassDB::bind_vararg_method(godot::METHOD_FLAG_NORMAL, "trampoline",
+        &JavascrtipCallableTrampoline::trampoline, godot::MethodInfo("trampoline"));
+}
 
-  public:
-    static void freeInstances() {
-        instances.clear();
+inline godot::Variant JavascrtipCallableTrampoline::trampoline(const godot::Variant **args, GDExtensionInt count,
+                                                             GDExtensionCallError &error) {
+    // C# can retain this RefCounted wrapper after its document expires. The
+    // method still exists, but an expired callback must never enter the old VM.
+    error.error = GDEXTENSION_CALL_OK;
+    auto state = context.lock();
+    if (!state || !state->active()) return godot::Variant();
+    godot::Ref<JavascrtipCallableTrampoline> keep_alive(this);
+    try {
+        auto result = state->call(function, args, count);
+        error.error = GDEXTENSION_CALL_OK;
+        return result;
+    } catch (const std::exception &exception) {
+        godot::UtilityFunctions::push_error(exception.what());
     }
+    return godot::Variant();
+}
 
-    static JavascrtipCallableTrampoline* instantiate(ulbind17::detail::Object o) {
-        if (auto it = instances.find(o.holder->value); it != instances.end()) {
-            return it->second.ptr();
-        }
-        JavascrtipCallableTrampoline* out = memnew(gdbind::JavascrtipCallableTrampoline(new gdbind::JavascriptCallable(o)));
-        instances.emplace(o.holder->value, out);
-        return out;
-    }
-
-  public:
-    JavascriptCallable *callable = nullptr;
-    JavascrtipCallableTrampoline() : RefCounted() {};
-    JavascrtipCallableTrampoline(JavascriptCallable *callable) : RefCounted(), callable(callable) {
-    }
-
-    virtual ~JavascrtipCallableTrampoline() {
-        if (callable != nullptr) {
-            delete callable;
-        }
-    }
-
-  public:
-    static void _bind_methods() {
-        ClassDB::bind_vararg_method(METHOD_FLAG_NORMAL, "trampoline", &JavascrtipCallableTrampoline::trampoline,
-                                    MethodInfo("trampoline"));
-    }
-
-  protected:
-    Variant trampoline(const godot::Variant **p_arguments, GDExtensionInt p_argcount,
-                       GDExtensionCallError &r_call_error) {
-        godot::Variant out;
-        callable->call(p_arguments, p_argcount, out, r_call_error);
-        return out;
-    }
-};
 } // namespace gdbind
