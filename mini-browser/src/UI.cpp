@@ -1,159 +1,93 @@
 #include "UI.h"
+#include <iostream>
+#include <stdexcept>
 
-static UI *g_ui = 0;
-
-#define UI_HEIGHT 41
-
-UI::UI(Browser *browser)
-    : browser_(browser), cur_cursor_(Cursor::kCursor_Pointer), is_resizing_inspector_(false),
-      is_over_inspector_resize_drag_handle_(false) {
-    uint32_t window_width = window()->width();
-    ui_height_ = (uint32_t)std::round(UI_HEIGHT * window()->scale());
-    overlay_ = Overlay::Create(window(), window_width, ui_height_, 0, 0);
-    g_ui = this;
-
+UI::UI(Browser *browser) : browser_(browser), cur_cursor_(Cursor::kCursor_Pointer) {
+    panel_ = window()->AddPanel({ .size = "41px", .fixed = true });
+    body_ = window()->layout()->AddColumn({ .resizable = true });
+    body_->SetDividerStyle({ .hit_width = 10 });
+    bindings_ = std::make_unique<ulbind17::Bindings>("browser");
+    bindings_->bindFunc("OnBack", ulbind17::js::Bind(this, &UI::OnBack));
+    bindings_->bindFunc("OnForward", ulbind17::js::Bind(this, &UI::OnForward));
+    bindings_->bindFunc("OnRefresh", ulbind17::js::Bind(this, &UI::OnRefresh));
+    bindings_->bindFunc("OnStop", ulbind17::js::Bind(this, &UI::OnStop));
+    bindings_->bindFunc("OnToggleTools", ulbind17::js::Bind(this, &UI::OnToggleTools));
+    bindings_->bindFunc("OnRequestChangeURL", [this](std::string url) { OnRequestChangeURL(url.c_str()); });
+    if (!bindings_->AttachTo(view().get())) throw std::runtime_error("Unable to bind browser API");
     view()->set_load_listener(this);
     view()->set_view_listener(this);
     view()->LoadURL("file:///ui/ui.html");
 }
-
 UI::~UI() {
-    view()->set_load_listener(nullptr);
-    view()->set_view_listener(nullptr);
-    g_ui = nullptr;
+    bindings_.reset(); context_ = {}; page_.reset();
+    view()->set_load_listener(nullptr); view()->set_view_listener(nullptr);
+    window()->layout()->Remove(body_); window()->layout()->Remove(panel_);
 }
-
-bool UI::OnKeyEvent(const ultralight::KeyEvent &evt) {
-    // Consume all F2 key events
+bool UI::OnKeyEvent(ultralight::Window *, const ultralight::KeyEvent &evt) {
     if (evt.virtual_key_code == KeyCodes::GK_F2) {
-        if (evt.type == KeyEvent::kType_RawKeyDown) {
+        if (evt.type == KeyEvent::kType_RawKeyDown)
             App::instance()->renderer()->StartRemoteInspectorServer("0.0.0.0", 7676);
-        }
         return false;
     }
-
     return true;
 }
-
-bool UI::OnMouseEvent(const ultralight::MouseEvent &evt) {
-    if (page_ && page_->IsInspectorShowing()) {
-        float x_px = std::round(evt.x * window()->scale());
-        float y_px = std::round(evt.y * window()->scale());
-
-        if (is_resizing_inspector_) {
-            int resize_delta = inspector_resize_begin_mouse_y_ - y_px;
-            int new_inspector_height = inspector_resize_begin_height_ + resize_delta;
-            page_->SetInspectorHeight(new_inspector_height);
-
-            if (evt.type == MouseEvent::kType_MouseUp) {
-                is_resizing_inspector_ = false;
-            }
-
-            return false;
-        }
-
-        IntRect drag_handle = page_->GetInspectorResizeDragHandle();
-
-        bool over_drag_handle = drag_handle.Contains(Point(x_px, y_px));
-
-        if (over_drag_handle && !is_over_inspector_resize_drag_handle_) {
-            // We entered the drag area
-            window()->SetCursor(Cursor::kCursor_NorthSouthResize);
-            is_over_inspector_resize_drag_handle_ = true;
-        } else if (!over_drag_handle && is_over_inspector_resize_drag_handle_) {
-            // We left the drag area, restore previous cursor
-            window()->SetCursor(cur_cursor_);
-            is_over_inspector_resize_drag_handle_ = false;
-        }
-
-        if (over_drag_handle && evt.type == MouseEvent::kType_MouseDown && !is_resizing_inspector_) {
-            is_resizing_inspector_ = true;
-            inspector_resize_begin_mouse_y_ = y_px;
-            inspector_resize_begin_height_ = page_->GetInspectorHeight();
-        }
-
-        return !over_drag_handle;
-    }
-
-    return true;
-}
+bool UI::OnMouseEvent(ultralight::Window *, const ultralight::MouseEvent &) { return true; }
 
 void UI::OnClose(ultralight::Window *window) {
     App::instance()->Quit();
 }
 
-void UI::OnResize(ultralight::Window *window, uint32_t width, uint32_t height) {
-    int page_height = window->height() - ui_height_;
-
-    if (page_height < 1)
-        page_height = 1;
-
-    overlay_->Resize(window->width(), ui_height_);
-
-    if (page())
-        page()->Resize(window->width(), (uint32_t)page_height);
+void UI::OnResize(ultralight::Window *, double, double) {
+    // Panel layout owns logical sizing, DPI conversion and divider hit testing.
 }
 
 void UI::OnDOMReady(View *caller, uint64_t frame_id, bool is_main_frame, const String &url) {
-    // Set the context for all subsequent JS* calls
-    RefPtr<JSContext> locked_context = view()->LockJSContext();
-    SetJSContext(locked_context->ctx());
-
-    JSObject global = JSGlobalObject();
-    updateBack = global["updateBack"];
-    updateForward = global["updateForward"];
-    updateLoading = global["updateLoading"];
-    updateURL = global["updateURL"];
-
-    global["OnBack"] = BindJSCallback(&UI::OnBack);
-    global["OnForward"] = BindJSCallback(&UI::OnForward);
-    global["OnRefresh"] = BindJSCallback(&UI::OnRefresh);
-    global["OnStop"] = BindJSCallback(&UI::OnStop);
-    global["OnToggleTools"] = BindJSCallback(&UI::OnToggleTools);
-    global["OnRequestChangeURL"] = BindJSCallback(&UI::OnRequestChangeURL);
-
-    CreatePage();
+    if (!is_main_frame) return;
+    context_ = ulbind17::js::Context(caller);
+    auto global = ulbind17::Object::GetGlobalObject(context_);
+    auto api = global.value().GetProperty("browser");
+    if (!api) { std::cerr << "Browser JS: " << api.error().message() << '\n'; return; }
+    // Retain the toolbar's existing global callback names while the SDK owns
+    // native binding lifetime and navigation reinjection under browser.*.
+    for (const auto *name : {"OnBack", "OnForward", "OnRefresh", "OnStop", "OnToggleTools", "OnRequestChangeURL"}) {
+        auto function = api.value().GetProperty(name);
+        if (!function) { std::cerr << "Browser JS: " << function.error().message() << '\n'; return; }
+        auto assigned = global.set(name, function.value());
+        if (!assigned) { std::cerr << "Browser JS: " << assigned.error().message() << '\n'; return; }
+    }
+    if (!page_) CreatePage();
 }
 
-void UI::OnBack(const JSObject &obj, const JSArgs &args) {
+void UI::OnBack() {
     if (page())
         page()->view()->GoBack();
 }
 
-void UI::OnForward(const JSObject &obj, const JSArgs &args) {
+void UI::OnForward() {
     if (page())
         page()->view()->GoForward();
 }
 
-void UI::OnRefresh(const JSObject &obj, const JSArgs &args) {
+void UI::OnRefresh() {
     if (page())
         page()->view()->Reload();
 }
 
-void UI::OnStop(const JSObject &obj, const JSArgs &args) {
+void UI::OnStop() {
     if (page())
         page()->view()->Stop();
 }
 
-void UI::OnToggleTools(const JSObject &obj, const JSArgs &args) {
+void UI::OnToggleTools() {
     if (page())
         page()->ToggleInspector();
 }
 
-void UI::OnRequestChangeURL(const JSObject &obj, const JSArgs &args) {
-    if (args.size() == 1) {
-        ultralight::String url = args[0];
-
-        if (page())
-            page()->view()->LoadURL(url);
-    }
+void UI::OnRequestChangeURL(const ultralight::String &url) {
+    if (page()) page()->view()->LoadURL(url);
 }
-
 void UI::CreatePage() {
-    int page_height = window()->height() - ui_height_;
-    if (page_height < 1)
-        page_height = 1;
-    page_.reset(new Page(this, window()->width(), (uint32_t)page_height, 0, ui_height_));
+    page_ = std::make_unique<Page>(this);
     page_->view()->LoadURL("file:///ui/welcome.html");
 }
 
@@ -163,19 +97,22 @@ void UI::UpdatePageNavigation(bool is_loading, bool can_go_back, bool can_go_for
     SetCanGoForward(can_go_forward);
 }
 
+void UI::UpdateToolbar(const char *name, const ulbind17::js::Value &value) {
+    if (!context_) return;
+    auto result = ulbind17::Object::GetGlobalObject(context_).call<void>(name, value);
+    if (!result) std::cerr << "Browser JS: " << result.error().message() << '\n';
+}
+
 void UI::SetLoading(bool is_loading) {
-    RefPtr<JSContext> lock(view()->LockJSContext());
-    updateLoading({is_loading});
+    if (context_) UpdateToolbar("updateLoading", context_.Make(is_loading));
 }
 
 void UI::SetCanGoBack(bool can_go_back) {
-    RefPtr<JSContext> lock(view()->LockJSContext());
-    updateBack({can_go_back});
+    if (context_) UpdateToolbar("updateBack", context_.Make(can_go_back));
 }
 
 void UI::SetCanGoForward(bool can_go_forward) {
-    RefPtr<JSContext> lock(view()->LockJSContext());
-    updateForward({can_go_forward});
+    if (context_) UpdateToolbar("updateForward", context_.Make(can_go_forward));
 }
 
 void UI::SetTitle(const String &title) {
@@ -183,8 +120,7 @@ void UI::SetTitle(const String &title) {
 }
 
 void UI::SetURL(const ultralight::String &url) {
-    RefPtr<JSContext> lock(view()->LockJSContext());
-    updateURL({url});
+    if (context_) UpdateToolbar("updateURL", context_.Make(std::string(url.utf8().data(), url.utf8().length())));
 }
 
 void UI::SetCursor(ultralight::Cursor cursor) {

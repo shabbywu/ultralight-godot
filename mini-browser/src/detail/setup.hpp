@@ -3,13 +3,10 @@
 
 #include "Filesystem.hpp"
 #include <AppCore/AppCore.h>
-#include <ulbind17/fonts/FreeUniversal-Regular.h>
-#include <ulbind17/platform/FontLoader.hpp>
-#include <ulbind17/resources/cacert.h>
-#include <ulbind17/resources/icudt67l.h>
 
-#include "gen/inspector.h"
-#include "gen/ui.h"
+
+#include "generated_assets/inspector.h"
+#include "generated_assets/ui.h"
 
 namespace mini {
 namespace setup {
@@ -21,8 +18,8 @@ static void setup_ultralight_platform() {
     // Setup platform
     ultralight::Config my_config;
     platform.set_config(my_config);
-    auto &font = bin2cpp::getFreeUniversalRegularTtfFile();
-    platform.set_font_loader(ultralight::GetPlatformFontLoader());
+    // Install the filesystem before AppCore initializes its native font loader/ICU.
+    // App::Create preserves this handler and supplies the platform font loader.
     platform.set_file_system(new mini::PhysfsFileSystem("."));
 }
 

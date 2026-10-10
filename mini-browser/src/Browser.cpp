@@ -10,12 +10,11 @@ Browser::Browser(bool use_gpu, bool force_repaint, bool show_stats) {
     settings.force_cpu_renderer = !use_gpu;
 
     Config config;
-    config.scroll_timer_delay = 1.0 / 90.0;
     config.force_repaint = force_repaint;
     app_ = App::Create(settings, config);
 
     window_ = Window::Create(app_->main_monitor(), 1024, 768, false,
-                             kWindowFlags_Resizable | kWindowFlags_Titled | kWindowFlags_Maximizable);
+                             WindowFlags::Resizable | WindowFlags::Titled | WindowFlags::Maximizable);
     if (show_stats)
         window_->EnableFrameStatistics();
     SetTitle("Welcome!");

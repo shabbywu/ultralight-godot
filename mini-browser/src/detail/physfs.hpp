@@ -7,7 +7,7 @@
 #include <vector>
 
 namespace physfs {
-class PhysfsRuntimeError : std::runtime_error {
+class PhysfsRuntimeError : public std::runtime_error {
     typedef std::runtime_error super;
 
   public:

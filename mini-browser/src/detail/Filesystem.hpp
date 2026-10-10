@@ -6,13 +6,14 @@
 
 #include "iostream"
 #include "physfs.hpp"
-#include <ulbind17/resources/cacert.h>
-#include <ulbind17/resources/icudt67l.h>
+#include <ulbind17/resources/embedded/SDKResources.hpp>
 
 namespace mini {
 class PhysfsFileSystem : public ultralight::FileSystem {
+    ulbind17::resources::embedded::SDKResources resources;
   public:
-    PhysfsFileSystem(std::filesystem::path rootpath) {
+    PhysfsFileSystem(std::filesystem::path rootpath)
+        : resources(ultralight::Platform::instance().config().resource_path_prefix.utf8().data()) {
         physfs::physfs_init(rootpath.string());
     }
 
@@ -29,39 +30,22 @@ class PhysfsFileSystem : public ultralight::FileSystem {
 
     virtual bool FileExists(const ultralight::String &file_path) override {
         std::string p = file_path.utf8().data();
-        {
-            auto &icudt67l = bin2cpp::getIcudt67lDatFile();
-            if (p == icudt67l.getFileName()) {
-                return true;
-            }
-        }
-        {
-            auto &cacert = bin2cpp::getCacertPemFile();
-            if (p == cacert.getFileName()) {
-                return true;
-            }
-        }
+        if (resources.FileExists(file_path))
+            return true;
         return PHYSFS_exists(p.c_str());
     }
 
     virtual ultralight::RefPtr<ultralight::Buffer> OpenFile(const ultralight::String &file_path) override {
         std::string p = file_path.utf8().data();
-        {
-            auto &icudt67l = bin2cpp::getIcudt67lDatFile();
-            if (p == icudt67l.getFileName()) {
-                return ultralight::Buffer::Create((void *)icudt67l.getBuffer(), icudt67l.getSize(), nullptr, nullptr);
-            }
+        auto resource = resources.OpenFile(file_path);
+        if (resource.get()) return resource;
+        try {
+            auto data = physfs::physfs_cat(p);
+            return ultralight::Buffer::CreateFromCopy(data.data(), data.size());
+        } catch (const std::exception &error) {
+            std::cerr << "OpenFile: " << error.what() << '\n';
+            return nullptr;
         }
-
-        {
-            auto &cacert = bin2cpp::getCacertPemFile();
-            if (p == cacert.getFileName()) {
-                return ultralight::Buffer::Create((void *)cacert.getBuffer(), cacert.getSize(), nullptr, nullptr);
-            }
-        }
-
-        auto data = physfs::physfs_cat(p);
-        return ultralight::Buffer::CreateFromCopy(data.data(), data.size());
     }
 };
 } // namespace mini

@@ -2,12 +2,9 @@
 #include "Browser.h"
 #include "Page.h"
 #include <AppCore/AppCore.h>
-#include <map>
+#include <ulbind17/ulbind17.hpp>
 #include <memory>
 
-using ultralight::JSArgs;
-using ultralight::JSFunction;
-using ultralight::JSObject;
 using namespace ultralight;
 
 class Console;
@@ -21,12 +18,15 @@ class UI : public WindowListener, public LoadListener, public ViewListener {
     ~UI();
 
     // Inherited from WindowListener
-    virtual bool OnKeyEvent(const ultralight::KeyEvent &evt) override;
-    virtual bool OnMouseEvent(const ultralight::MouseEvent &evt) override;
+    virtual bool OnKeyEvent(ultralight::Window *window, const ultralight::KeyEvent &evt) override;
+    virtual bool OnMouseEvent(ultralight::Window *window, const ultralight::MouseEvent &evt) override;
     virtual void OnClose(ultralight::Window *window) override;
-    virtual void OnResize(ultralight::Window *window, uint32_t width, uint32_t height) override;
+    virtual void OnResize(ultralight::Window *window, double width, double height) override;
 
     // Inherited from LoadListener
+    void OnBeginLoading(View *, uint64_t, bool is_main_frame, const String &) override {
+        if (is_main_frame) context_ = {};
+    }
     virtual void OnDOMReady(View *caller, uint64_t frame_id, bool is_main_frame, const String &url) override;
 
     // Inherited from ViewListener
@@ -35,12 +35,12 @@ class UI : public WindowListener, public LoadListener, public ViewListener {
     }
 
     // Called by UI JavaScript
-    void OnBack(const JSObject &obj, const JSArgs &args);
-    void OnForward(const JSObject &obj, const JSArgs &args);
-    void OnRefresh(const JSObject &obj, const JSArgs &args);
-    void OnStop(const JSObject &obj, const JSArgs &args);
-    void OnToggleTools(const JSObject &obj, const JSArgs &args);
-    void OnRequestChangeURL(const JSObject &obj, const JSArgs &args);
+    void OnBack();
+    void OnForward();
+    void OnRefresh();
+    void OnStop();
+    void OnToggleTools();
+    void OnRequestChangeURL(const ultralight::String &url);
 
     RefPtr<Window> window() {
         return browser_->window();
@@ -56,35 +56,23 @@ class UI : public WindowListener, public LoadListener, public ViewListener {
     void SetTitle(const String &title);
     void SetURL(const String &url);
     void SetCursor(Cursor cursor);
+    void UpdateToolbar(const char *name, const ulbind17::js::Value &value);
 
     Page *page() {
         return page_.get();
     }
 
     RefPtr<View> view() {
-        return overlay_->view();
+        return panel_->view();
     }
 
     Browser *browser_;
-    RefPtr<Overlay> overlay_;
-    int ui_height_;
-    int page_height_;
-    float scale_;
-
+    RefPtr<Panel> panel_;
+    RefPtr<Container> body_;
     std::unique_ptr<Page> page_;
+    std::unique_ptr<ulbind17::Bindings> bindings_;
+    ulbind17::js::Context context_;
     Cursor cur_cursor_;
-    bool is_resizing_inspector_;
-    bool is_over_inspector_resize_drag_handle_;
-    int inspector_resize_begin_height_;
-    int inspector_resize_begin_mouse_y_;
-
-    JSFunction updateBack;
-    JSFunction updateForward;
-    JSFunction updateLoading;
-    JSFunction updateURL;
-    JSFunction addTab;
-    JSFunction updateTab;
-    JSFunction closeTab;
 
     friend class Page;
 };

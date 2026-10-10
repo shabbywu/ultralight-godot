@@ -2,12 +2,10 @@
 #include "UI.h"
 #include <iostream>
 #include <string>
+#include <ulbind17/jsc/Bridge.hpp>
 
-#define INSPECTOR_DRAG_HANDLE_HEIGHT 10
-
-Page::Page(UI *ui, uint32_t width, uint32_t height, int x, int y)
-    : ui_(ui), container_width_(width), container_height_(height) {
-    overlay_ = Overlay::Create(ui->window(), width, height, x, y);
+Page::Page(UI *ui) : ui_(ui) {
+    panel_ = ui_->body_->AddPanel();
     view()->set_view_listener(this);
     view()->set_load_listener(this);
     view()->set_download_listener(this);
@@ -19,97 +17,44 @@ Page::~Page() {
     view()->set_download_listener(nullptr);
     view()->set_view_listener(nullptr);
     view()->set_load_listener(nullptr);
+    if (inspector_panel_) ui_->body_->Remove(inspector_panel_);
+    ui_->body_->Remove(panel_);
 }
 
 void Page::Show() {
-    overlay_->Show();
-    overlay_->Focus();
+    panel_->Show();
+    panel_->Focus();
 
-    if (inspector_overlay_)
-        inspector_overlay_->Show();
+    if (inspector_panel_)
+        inspector_panel_->Show();
 }
 
 void Page::Hide() {
-    overlay_->Hide();
-    overlay_->Unfocus();
+    panel_->Hide();
+    if (ui_->window()->focused_panel() == panel_) ui_->window()->ClearFocus();
 
-    if (inspector_overlay_)
-        inspector_overlay_->Hide();
+    if (inspector_panel_)
+        inspector_panel_->Hide();
 }
 
 void Page::ToggleInspector() {
-    if (!inspector_overlay_) {
+    if (!inspector_panel_) {
         view()->CreateLocalInspectorView();
     } else {
-        if (inspector_overlay_->is_hidden()) {
-            inspector_overlay_->Show();
+        if (inspector_panel_->is_hidden()) {
+            inspector_panel_->Show();
         } else {
-            inspector_overlay_->Hide();
+            inspector_panel_->Hide();
         }
     }
 
-    // Force resize to update layout
-    Resize(container_width_, container_height_);
 }
 
 bool Page::IsInspectorShowing() const {
-    if (!inspector_overlay_)
+    if (!inspector_panel_)
         return false;
 
-    return !inspector_overlay_->is_hidden();
-}
-
-IntRect Page::GetInspectorResizeDragHandle() const {
-    if (!IsInspectorShowing())
-        return IntRect::MakeEmpty();
-
-    int drag_handle_height_px = (uint32_t)std::round(INSPECTOR_DRAG_HANDLE_HEIGHT * ui_->window()->scale());
-
-    // This drag handle should span the width of the UI and be centered vertically at the boundary between
-    // the page overlay and inspector overlay.
-
-    int drag_handle_x = (int)inspector_overlay_->x();
-    int drag_handle_y = (int)inspector_overlay_->y() - drag_handle_height_px / 2;
-
-    return {drag_handle_x, drag_handle_y, drag_handle_x + (int)inspector_overlay_->width(),
-            drag_handle_y + drag_handle_height_px};
-}
-
-int Page::GetInspectorHeight() const {
-    if (inspector_overlay_)
-        return inspector_overlay_->height();
-
-    return 0;
-}
-
-void Page::SetInspectorHeight(int height) {
-    if (height > 2) {
-        inspector_overlay_->Resize(inspector_overlay_->width(), height);
-
-        // Trigger a resize to perform re-layout / re-size of content overlay
-        Resize(container_width_, container_height_);
-    }
-}
-
-void Page::Resize(uint32_t width, uint32_t height) {
-    container_width_ = width;
-    container_height_ = height;
-
-    uint32_t content_height = container_height_;
-    if (inspector_overlay_ && !inspector_overlay_->is_hidden()) {
-        uint32_t inspector_height_px = inspector_overlay_->height();
-        content_height -= inspector_height_px;
-    }
-
-    if (content_height < 1)
-        content_height = 1;
-
-    overlay_->Resize(container_width_, content_height);
-
-    if (inspector_overlay_ && !inspector_overlay_->is_hidden()) {
-        inspector_overlay_->Resize(container_width_, inspector_overlay_->height());
-        inspector_overlay_->MoveTo(0, overlay_->y() + overlay_->height());
-    }
+    return !inspector_panel_->is_hidden();
 }
 
 void Page::OnChangeTitle(View *caller, const String &title) {
@@ -134,15 +79,12 @@ void Page::OnAddConsoleMessage(View *caller, const ConsoleMessage &msg) {
               << msg.column_number() << "\n\tsource_id:\t" << msg.source_id().utf8().data() << "\n\tnum_arguments:\t"
               << msg.num_arguments() << std::endl;
 
-    uint32_t num_args = msg.num_arguments();
-    if (num_args > 0) {
-        SetJSContext(msg.argument_context());
-        for (uint32_t i = 0; i < num_args; i++) {
-            String arg_str = JSValue(msg.argument_at(i)).ToString();
-            std::cout << "\n\t[" << i << "]:\t" << arg_str.utf8().data();
-        }
-        std::cout << std::endl;
+    for (uint32_t i = 0; i < msg.num_arguments(); ++i) {
+        std::cout << "\n\t[" << i << "]:\t";
+        try { std::cout << ulbind17::jsc::text(msg.argument_context(), msg.argument_at(i)); }
+        catch (const std::exception &error) { std::cout << "[conversion failed: " << error.what() << ']'; }
     }
+    std::cout << std::endl;
 }
 
 RefPtr<View> Page::OnCreateChildView(ultralight::View *caller, const String &opener_url, const String &target_url,
@@ -153,16 +95,14 @@ RefPtr<View> Page::OnCreateChildView(ultralight::View *caller, const String &ope
 }
 
 RefPtr<View> Page::OnCreateInspectorView(ultralight::View *caller, bool is_local, const String &inspected_url) {
-    if (inspector_overlay_)
+    if (inspector_panel_)
         return nullptr;
 
-    inspector_overlay_ = Overlay::Create(ui_->window(), container_width_, container_height_ / 2, 0, 0);
+    inspector_panel_ = ui_->body_->AddPanel({ .size = "50%", .min_size = "80px" });
 
-    // Force resize to update layout
-    Resize(container_width_, container_height_);
-    inspector_overlay_->Show();
+    inspector_panel_->Show();
 
-    return inspector_overlay_->view();
+    return inspector_panel_->view();
 }
 
 void Page::OnBeginLoading(View *caller, uint64_t frame_id, bool is_main_frame, const String &url) {
