@@ -5,9 +5,10 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 namespace gdbind {
-inline void JavascrtipCallableTrampoline::configure(std::weak_ptr<BridgeContext> state, JSObjectRef fn) {
+inline void JavascrtipCallableTrampoline::configure(std::weak_ptr<BridgeContext> state,
+                                                   std::unique_ptr<ulbind17::jsc::Bridge::Handle> fn) {
     context = state;
-    function = fn;
+    function = std::move(fn);
 }
 
 inline void JavascrtipCallableTrampoline::_bind_methods() {
@@ -21,10 +22,10 @@ inline godot::Variant JavascrtipCallableTrampoline::trampoline(const godot::Vari
     // method still exists, but an expired callback must never enter the old VM.
     error.error = GDEXTENSION_CALL_OK;
     auto state = context.lock();
-    if (!state || !state->active()) return godot::Variant();
+    if (!state || !state->active() || !function) return godot::Variant();
     godot::Ref<JavascrtipCallableTrampoline> keep_alive(this);
     try {
-        auto result = state->call(function, args, count);
+        auto result = state->call(*function, args, count);
         error.error = GDEXTENSION_CALL_OK;
         return result;
     } catch (const std::exception &exception) {

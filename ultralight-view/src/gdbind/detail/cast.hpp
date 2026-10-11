@@ -4,18 +4,18 @@
 #include <godot_cpp/core/object.hpp>
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
-#include <algorithm>
+#include <limits>
 
 namespace gdbind {
-inline godot::Variant BridgeContext::read(JSValueRef value, std::vector<JSObjectRef> &parents) {
+inline godot::Variant BridgeContext::read(JSValueRef value, ulbind17::jsc::Traversal &traversal) {
     auto ctx = runtime_->context();
     if (!value) throw std::runtime_error("Empty JavaScript value");
     Root root(ctx, value);
     switch (JSValueGetType(ctx, value)) {
     case kJSTypeUndefined:
     case kJSTypeNull: return godot::Variant();
-    case kJSTypeBoolean: return JSValueToBoolean(ctx, value);
-    case kJSTypeNumber: return JSValueToNumber(ctx, value, nullptr);
+    case kJSTypeBoolean: return runtime_->readBoolean(value);
+    case kJSTypeNumber: return runtime_->readNumber(value);
     case kJSTypeString: {
         auto text = JSValueToStringCopy(ctx, value, nullptr);
         auto result = godot_string(text);
@@ -29,57 +29,49 @@ inline godot::Variant BridgeContext::read(JSValueRef value, std::vector<JSObject
     if (auto id = runtime_->unwrap<godot::ObjectID>(value)) return godot::ObjectDB::get_instance(*id);
     if (runtime_->isPromise(value)) return readPromise(object);
     if (JSObjectIsFunction(ctx, object)) return readFunction(object);
-    if (parents.size() >= 64 || std::find(parents.begin(), parents.end(), object) != parents.end())
-        throw std::runtime_error("Cyclic or excessively nested JavaScript data");
-    parents.push_back(object);
-    JSValueRef exception = nullptr;
+    auto guard = traversal.enter(object);
     if (JSValueIsArray(ctx, value)) {
-        JSString length{godot::String("length")};
-        auto length_value = JSObjectGetProperty(ctx, object, length, &exception);
-        check(exception);
-        auto size = JSValueToNumber(ctx, length_value, &exception);
-        check(exception);
+        auto size = runtime_->length(value);
         godot::Array result;
-        result.resize(static_cast<int64_t>(size));
+        if (result.resize(static_cast<int64_t>(size)) != godot::OK)
+            throw std::runtime_error("Could not allocate Godot array");
         for (int64_t i = 0; i < result.size(); ++i) {
-            auto item = JSObjectGetPropertyAtIndex(ctx, object, i, &exception);
-            check(exception);
-            result[i] = read(item, parents);
+            result[i] = read(runtime_->at(object, static_cast<uint32_t>(i)), traversal);
         }
-        parents.pop_back();
         return result;
     }
     godot::Dictionary result;
+    // Preserve the existing JSC enumeration (including prototype properties),
+    // rather than changing Variant conversion to Object.keys() semantics.
     auto keys = JSObjectCopyPropertyNames(ctx, object);
     try {
+        runtime_->context(); // Enumeration hooks may navigate or close the View.
         for (size_t i = 0; i < JSPropertyNameArrayGetCount(keys); ++i) {
             auto name = JSPropertyNameArrayGetNameAtIndex(keys, i);
-            auto item = JSObjectGetProperty(ctx, object, name, &exception);
-            check(exception);
-            result[godot_string(name)] = read(item, parents);
+            auto item = runtime_->get(object, ulbind17::jsc::utf8(name));
+            result[godot_string(name)] = read(item, traversal);
         }
     } catch (...) {
         JSPropertyNameArrayRelease(keys);
         throw;
     }
     JSPropertyNameArrayRelease(keys);
-    parents.pop_back();
     return result;
 }
 
 inline godot::Variant BridgeContext::toGodot(JSValueRef value) {
-    std::vector<JSObjectRef> parents;
-    return read(value, parents);
+    ulbind17::jsc::Traversal traversal;
+    return read(value, traversal);
 }
 
 inline JSValueRef BridgeContext::toJS(const godot::Variant &value, unsigned depth) {
     auto ctx = runtime_->context();
     if (!active() || depth >= 64) throw std::runtime_error("Invalid context or excessively nested Godot data");
     switch (value.get_type()) {
-    case godot::Variant::NIL: return JSValueMakeNull(ctx);
-    case godot::Variant::BOOL: return JSValueMakeBoolean(ctx, bool(value));
-    case godot::Variant::INT: return JSValueMakeNumber(ctx, double(int64_t(value)));
-    case godot::Variant::FLOAT: return JSValueMakeNumber(ctx, double(value));
+    case godot::Variant::NIL: return runtime_->makeNull();
+    case godot::Variant::BOOL: return runtime_->makeBoolean(bool(value));
+    case godot::Variant::INT: return runtime_->makeNumber(double(int64_t(value)));
+    case godot::Variant::FLOAT: return runtime_->makeNumber(double(value));
     case godot::Variant::STRING: {
         JSString text{godot::String(value)};
         return JSValueMakeString(ctx, text);
@@ -88,25 +80,22 @@ inline JSValueRef BridgeContext::toJS(const godot::Variant &value, unsigned dept
     case godot::Variant::OBJECT: return writeObject(value);
     case godot::Variant::ARRAY: {
         godot::Array values = value;
-        auto array = JSObjectMakeArray(ctx, 0, nullptr, nullptr);
+        if (static_cast<uint64_t>(values.size()) > (std::numeric_limits<uint32_t>::max)())
+            throw std::runtime_error("Godot array exceeds JavaScript index range");
+        auto array = runtime_->makeArray();
         Root root(ctx, array);
-        JSValueRef exception = nullptr;
         for (int64_t i = 0; i < values.size(); ++i) {
-            JSObjectSetPropertyAtIndex(ctx, array, i, toJS(values[i], depth + 1), &exception);
-            check(exception);
+            runtime_->setAt(array, static_cast<uint32_t>(i), toJS(values[i], depth + 1));
         }
         return array;
     }
     case godot::Variant::DICTIONARY: {
         godot::Dictionary values = value;
-        auto object = JSObjectMake(ctx, nullptr, nullptr);
+        auto object = runtime_->makePlainObject();
         Root root(ctx, object);
         auto keys = values.keys();
-        JSValueRef exception = nullptr;
         for (int64_t i = 0; i < keys.size(); ++i) {
-            JSString key{godot::String(keys[i])};
-            JSObjectSetProperty(ctx, object, key, toJS(values[keys[i]], depth + 1), kJSPropertyAttributeNone, &exception);
-            check(exception);
+            runtime_->set(object, godot_utf8(godot::String(keys[i])), toJS(values[keys[i]], depth + 1));
         }
         return object;
     }

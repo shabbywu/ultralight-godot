@@ -26,6 +26,15 @@ func run() -> void:
         view.call("bind_func", "csharp_callback", probe.call("GetCallback"))
         check(view.call("execute_script", "csharp.Label='修改 🐉';csharp.Echo(csharp.Label)") == "修改 🐉", "C# object method/property binding failed")
         check(probe.get("Label") == "修改 🐉", "C# property setter did not run")
+        view.call("bind_object", "csharp_query", probe, true)
+        var reads: int = probe.get("GetterReads")
+        var keys = view.call("execute_script", "Object.keys(csharp_query)")
+        check(keys is Array and "ExportedLabel" in keys and "Label" not in keys and "Echo" not in keys, "C# query metadata did not distinguish exported properties")
+        check(view.call("execute_script", "Reflect.has(csharp_query,'ExportedLabel') && 'Echo' in csharp_query && !('Label' in csharp_query) && !('missing_member' in csharp_query)") == true, "C# query member existence failed")
+        check(probe.get("GetterReads") == reads, "C# member query evaluated a getter")
+        check(view.call("execute_script", "typeof csharp_query.Label==='undefined' && csharp.Label==='修改 🐉'") == true, "C# compatibility mode changed")
+        check(view.call("execute_script", "csharp_query.ExportedLabel='修改导出 🐉';csharp_query.Echo(csharp_query.ExportedLabel)") == "修改导出 🐉", "C# exported member access failed")
+        check(probe.get("GetterReads") == reads + 1, "C# queried property getter did not run once")
         check(view.call("execute_script", "csharp_callback({text:'中文 🐉',number:4294967297}).number") == 4294967297, "C# delegate callback/data conversion failed")
         check(view.call("execute_script", "(()=>{try{csharp.Echo();return false}catch(e){return /Godot callback failed/.test(e.message)}})()") == true, "Godot method argument errors did not reach JS")
         view.call("bind_func", "gdscript_callback", func(value): return value)
@@ -68,8 +77,17 @@ func run() -> void:
         check(not old.is_valid() or old.call({"text":"expired","number":1}) == null, "C# JS Callable executed after navigation")
         check(abandoned.is_completed() and abandoned.is_rejected(), "pending JS Promise did not cancel on navigation")
         probe = null
+    var pending: Array = []
+    var retained: Array[Callable] = []
+    for view in views:
+        pending.append(view.call("execute_script", "new Promise(()=>{})"))
+        retained.append(view.call("execute_script", "()=>42"))
     for port in ports: port.queue_free()
     views.clear(); ports.clear()
     await frames(10)
+    for promise in pending:
+        check(promise.is_completed() and promise.is_rejected(), "pending Promise did not cancel on View destruction")
+    for callback in retained:
+        check(not callback.is_valid() or callback.call() == null, "JS Callable survived View destruction")
     print("CSHARP_INTEROP ", "PASS" if failures.is_empty() else "FAIL", " ", failures)
     quit(0 if failures.is_empty() else 1)

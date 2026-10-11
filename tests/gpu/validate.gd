@@ -10,16 +10,83 @@ class BridgeProbe extends RefCounted:
     var label := "中文 🐉"
     func echo(value): return value
 
+class QueryProbe extends RefCounted:
+    var getter_reads := 0
+    var dynamic_enabled := false
+    var counted: String:
+        get:
+            getter_reads += 1
+            return "读取 🐉"
+    func echo(value): return value
+    func _get_property_list() -> Array[Dictionary]:
+        if not dynamic_enabled: return []
+        return [
+            {"name":"Bridge Group", "type":TYPE_NIL, "usage":PROPERTY_USAGE_GROUP},
+            {"name":"dynamic_value", "type":TYPE_STRING, "usage":PROPERTY_USAGE_DEFAULT},
+            {"name":"dynamic_value", "type":TYPE_STRING, "usage":PROPERTY_USAGE_DEFAULT},
+            {"name":"hidden_value", "type":TYPE_STRING, "usage":PROPERTY_USAGE_INTERNAL},
+        ]
+    func _get(property: StringName):
+        if property == &"dynamic_value": return "动态 🐉"
+        return null
+
+func check_members(view: Control) -> void:
+    for query in [false, true]:
+        var holder: Array = [QueryProbe.new()]
+        view.call("bind_object", "reentrant_probe", holder[0], query)
+        view.call("bind_func", "free_reentrant_probe", func(): holder.clear())
+        check(view.call("execute_script", "(()=>{try{reentrant_probe.getter_reads={get x(){free_reentrant_probe();return 1}};return false}catch(e){return /no longer valid/.test(e.message)}})()") == true, "setter accessed an object freed by JS conversion")
+    var probe := QueryProbe.new()
+    view.call("bind_object", "query_probe", probe, true)
+    var reads := probe.getter_reads
+    var keys = view.call("execute_script", "Object.keys(query_probe)")
+    check(keys is Array and "counted" in keys and "echo" not in keys, "query mode did not enumerate properties only")
+    check(view.call("execute_script", "'counted' in query_probe && Reflect.has(query_probe,'echo') && !Reflect.has(query_probe,'missing_member')") == true, "query mode member existence failed")
+    check(probe.getter_reads == reads, "member query or enumeration evaluated a getter")
+    check(view.call("execute_script", "typeof query_probe.missing_member === 'undefined'") == true, "missing member did not fall through to JS lookup")
+    check(view.call("execute_script", "query_probe.echo(query_probe.counted)") == "读取 🐉", "query mode property or method access failed")
+    check(probe.getter_reads == reads + 1, "query mode read did not call getter once")
+    probe.dynamic_enabled = true
+    keys = view.call("execute_script", "Object.keys(query_probe)")
+    check(keys is Array and keys.count("dynamic_value") == 1 and "Bridge Group" not in keys and "hidden_value" not in keys, "metadata update, filtering or deduplication failed")
+    check(view.call("execute_script", "query_probe.dynamic_value") == "动态 🐉", "dynamic metadata member unavailable")
+    probe.dynamic_enabled = false
+    check(view.call("execute_script", "!Reflect.has(query_probe,'dynamic_value')") == true, "removed metadata member still visible")
+    check(view.call("execute_script", "query_probe") == probe, "extended proxy lost Godot object identity")
+    probe = null
+    check(view.call("execute_script", "!Reflect.has(query_probe,'counted') && Object.keys(query_probe).length===0") == true, "freed query object was accessed")
+
 func check_bridge(view: Control) -> void:
     check(view.call("execute_script", "window.bridgeAtFirstScript") == true, "page globals were not bound before the first script")
     view.call("bind_func", "godot_echo", func(value): return value)
     var data = view.call("execute_script", "godot_echo({text:'中文 🐉',number:4294967297,values:[true,null,1.25,{x:'嵌套'}]})")
     check(data is Dictionary and data.text == "中文 🐉" and data.number == 4294967297 and data.values == [true,null,1.25,{"x":"嵌套"}], "JS nested data/Unicode/large number roundtrip failed")
     check(view.call("execute_script", "godot_echo(undefined)") == null, "undefined mapping failed")
+    # Godot's String conversion truncates NUL even with an explicit UTF-16 length.
+    check(view.call("execute_script", "godot_echo({['a'+String.fromCharCode(0)+'b']:'中'+String.fromCharCode(0)+'文 🐉'})") == {"a":"中"}, "Godot NUL boundary behavior changed")
+    check(view.call("execute_script", "godot_echo([,true,,3])") == [null,true,null,3.0], "sparse array conversion failed")
+    check(view.call("execute_script", "godot_echo(Object.create({inherited:7},{own:{value:3,enumerable:true}}))") == {"own":3.0,"inherited":7.0}, "prototype enumeration semantics changed")
+    check(view.call("execute_script", "(()=>{let shared={x:7};return godot_echo([shared,shared])})()") == [{"x":7.0},{"x":7.0}], "shared sibling conversion was rejected")
+    check(view.call("execute_script", "(()=>{let x={};for(let i=0;i<63;i++)x={child:x};godot_echo(x);return true})()") == true, "64-container JS traversal was rejected")
+    check(view.call("execute_script", "(()=>{try{let x={};for(let i=0;i<64;i++)x={child:x};godot_echo(x);return false}catch(e){return /nested/.test(e.message)}})()") == true, "JS traversal depth was not limited")
+    var cycle: Array = []
+    cycle.append(cycle)
+    view.call("bind_func", "godot_cycle", func(): return cycle)
+    check(view.call("execute_script", "(()=>{try{godot_cycle();return false}catch(e){return /nested/.test(e.message)}})()") == true, "cyclic Godot data was accepted")
+    cycle.clear()
+    var nested: Array = []
+    for i in 64: nested = [nested]
+    view.call("bind_func", "godot_nested", func(): return nested)
+    check(view.call("execute_script", "(()=>{try{godot_nested();return false}catch(e){return /nested/.test(e.message)}})()") == true, "Godot write depth was not limited")
     var fn: Callable = view.call("execute_script", "(function(value){return godot_echo(value);})")
     var returned = fn.call({"数字":4294967297,"值":[true,null,"中文 🐉"]})
     print("BRIDGE_FN ", fn.is_valid(), " ", returned)
     check(fn.is_valid() and returned is Dictionary and returned["数字"] == 4294967297 and returned["值"] == [true,null,"中文 🐉"], "JS function Callable conversion failed")
+    var cached: Callable = view.call("execute_script", "window.cachedFunction=function(x){return x};cachedFunction")
+    check(view.call("execute_script", "cachedFunction") == cached, "same-document JS Callable identity changed")
+    view.call("execute_script", "(()=>{let f=document.createElement('iframe');f.srcdoc='<script>1</script>';document.body.appendChild(f);return true})()")
+    await frames(10)
+    check(fn.is_valid() and fn.call("child frame") == "child frame", "child frame invalidated main JS Callable")
     check(view.call("execute_script", "(function(){try{var x={};x.self=x;godot_echo(x);return false;}catch(e){return /Cyclic/.test(e.message);}})()") == true, "cyclic JS data did not raise a catchable exception")
     check(view.call("execute_script", "(function(){try{godot_echo({get x(){throw new Error('getter failed');}});return false;}catch(e){return /getter failed/.test(e.message);}})()") == true, "throwing getter escaped the bridge")
     var object := BridgeProbe.new()
@@ -27,6 +94,7 @@ func check_bridge(view: Control) -> void:
     check(view.call("execute_script", "probe.label='修改 🐉';probe.echo(probe.label)") == "修改 🐉" and object.label == "修改 🐉", "Godot object method/property binding failed")
     object = null
     check(view.call("execute_script", "(function(){try{probe.echo('freed');return false;}catch(e){return /no longer valid/.test(e.message);}})()") == true, "freed Godot object was accessed")
+    check_members(view)
     # An old document's handles must expire after real navigation.
     view.set("htmlUrl", "file:///gpu-validation.html?bridge-navigation=1")
     await frames(30)

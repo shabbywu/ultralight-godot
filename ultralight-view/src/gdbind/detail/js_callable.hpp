@@ -11,8 +11,7 @@ inline godot::Variant BridgeContext::readFunction(JSObjectRef object) {
     if (found == functions.end()) {
         godot::Ref<JavascrtipCallableTrampoline> trampoline;
         trampoline.instantiate();
-        trampoline->configure(weak_from_this(), object);
-        runtime_->protect(object);
+        trampoline->configure(weak_from_this(), runtime_->retain(object));
         found = functions.emplace(object, trampoline).first;
     }
     return godot::Callable(found->second.ptr(), "trampoline");

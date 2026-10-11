@@ -20,12 +20,12 @@ class BridgeContext : public std::enable_shared_from_this<BridgeContext> {
     using Root = ulbind17::jsc::Root;
 
     void check(JSValueRef exception) const;
-    godot::Variant read(JSValueRef value, std::vector<JSObjectRef> &parents);
+    godot::Variant read(JSValueRef value, ulbind17::jsc::Traversal &traversal);
     godot::Variant readFunction(JSObjectRef function);
     godot::Variant readPromise(JSObjectRef promise);
     godot::Variant rejectionReason(JSValueRef value);
     JSValueRef writeCallable(const godot::Callable &callable);
-    JSValueRef writeObject(godot::Object *object);
+    JSValueRef writeObject(godot::Object *object, bool query_members = false);
 
   public:
     BridgeContext(JSContextRef context, ultralight::View *view);
@@ -38,8 +38,9 @@ class BridgeContext : public std::enable_shared_from_this<BridgeContext> {
     godot::Variant toGodot(JSValueRef value);
     JSValueRef toJS(const godot::Variant &value, unsigned depth = 0);
     void bind(const godot::String &name, const godot::Variant &value);
+    void bindObject(const godot::String &name, godot::Object *object, bool query_members);
     godot::Variant evaluate(const godot::String &script);
-    godot::Variant call(JSObjectRef function, const godot::Variant **args, int64_t count);
+    godot::Variant call(const ulbind17::jsc::Bridge::Handle &function, const godot::Variant **args, int64_t count);
 };
 
 } // namespace gdbind

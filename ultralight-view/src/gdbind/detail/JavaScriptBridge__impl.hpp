@@ -43,31 +43,33 @@ inline void BridgeContext::shutdown() {
 }
 
 inline void BridgeContext::bind(const godot::String &name, const godot::Variant &value) {
-    JSString key{name};
-    runtime_->bind(key, toJS(value));
+    runtime_->set(JSContextGetGlobalObject(runtime_->context()), godot_utf8(name), toJS(value));
+}
+
+inline void BridgeContext::bindObject(const godot::String &name, godot::Object *object, bool query_members) {
+    runtime_->set(JSContextGetGlobalObject(runtime_->context()), godot_utf8(name), writeObject(object, query_members));
 }
 
 inline godot::Variant BridgeContext::evaluate(const godot::String &script) {
-    JSString code{script};
-    auto value = runtime_->evaluate(code);
-    return value ? toGodot(value) : godot::Variant();
+    auto value = runtime_->evaluateRetained(godot_utf8(script));
+    return toGodot(value->value());
 }
 
-inline godot::Variant BridgeContext::call(JSObjectRef fn, const godot::Variant **args, int64_t count) {
-    auto ctx = runtime_->context();
+inline godot::Variant BridgeContext::call(const ulbind17::jsc::Bridge::Handle &fn,
+                                         const godot::Variant **args, int64_t count) {
+    runtime_->context();
     if (!owner) throw std::runtime_error("JavaScript View is no longer valid");
     // Host callbacks may reset the View while this invocation is on the stack.
     auto view = owner;
     auto lock = view->LockJSContext();
     if (!matches(lock->ctx())) throw std::runtime_error("JavaScript function belongs to a previous document");
-    std::vector<JSValueRef> values;
-    std::vector<std::unique_ptr<Root>> roots;
+    std::vector<const ulbind17::jsc::Bridge::Handle *> values;
+    std::vector<std::unique_ptr<ulbind17::jsc::Bridge::Handle>> handles;
     for (int64_t i = 0; i < count; ++i) {
-        auto value = toJS(*args[i]);
-        roots.push_back(std::make_unique<Root>(ctx, value));
-        values.push_back(value);
+        handles.push_back(runtime_->retain(toJS(*args[i])));
+        values.push_back(handles.back().get());
     }
-    auto value = runtime_->call(fn, values);
-    return value ? toGodot(value) : godot::Variant();
+    auto value = runtime_->callRetained(fn, values);
+    return toGodot(value->value());
 }
 } // namespace gdbind

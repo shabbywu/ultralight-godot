@@ -3,6 +3,10 @@
 #include <godot_cpp/variant/string.hpp>
 
 namespace gdbind {
+inline std::string godot_utf8(const godot::String &text) {
+    auto utf8 = text.utf8();
+    return std::string(utf8.get_data(), utf8.length());
+}
 class JSString : public ulbind17::jsc::String {
     explicit JSString(godot::Char16String text)
         : ulbind17::jsc::String(std::span<const char16_t>(

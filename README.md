@@ -35,6 +35,52 @@ The current source targets **Ultralight 2.0.0-beta.2**. Install the extension to
 
 **Ultralight Free edition limits View animations and repaints to 60 FPS.** Removing Godot's frame cap, disabling VSync or setting `max_render_fps` to 0 cannot remove the SDK edition limit.
 
+## JavaScript object bindings
+
+The extension uses ulbind17 for checked JavaScript operations, retained handles,
+Promise observation and traversal protection. Godot continues to own Variant
+conversion, Callable trampolines, signals, View lifecycle, input and texture upload.
+JavaScript objects still use the existing property enumeration when converted to
+Dictionary, including enumerable prototype properties. null and undefined both
+map to Nil; numbers map to double. Container conversion rejects cycles or excessive
+nesting (64 levels).
+Godot's current String conversion truncates embedded NUL characters at the
+boundary; this existing behavior also applies to Dictionary keys. ulbind17's
+standalone JSC string helpers support NUL, but Godot String does not preserve it
+through this adapter.
+
+Existing bindings keep their behavior:
+
+```gdscript
+view.bind_object("probe", probe)
+```
+
+To enable member queries for a particular binding:
+
+```gdscript
+view.bind_object("probe", probe, true)
+view.execute_script("Object.keys(probe)")
+view.execute_script("'label' in probe && Reflect.has(probe, 'echo')")
+```
+
+In query mode, Object.keys() enumerates Godot property metadata; methods are
+queryable but not enumerable. Categories, groups, subgroups and internal entries
+are excluded. Member queries do not read property values or run their getters,
+and reflect current metadata. Missing members follow ordinary JavaScript lookup.
+A freed object's Godot members disappear from queries and enumeration.
+
+**C# properties require `[Export]` in query mode.** Ordinary public C# properties
+remain accessible through the default compatibility mode. The query option applies
+only to the explicit binding; objects returned from callbacks or nested containers
+keep compatibility mode. Bindings must be installed again for each document,
+normally in `on_window_object_ready`. Returned JS Callables and pending Promises
+expire when the document is replaced or its View is destroyed.
+
+The resource filesystem uses ulbind17's embedded resource overlay with Godot's
+filesystem as fallback. Runtime-library staging also uses ulbind17's helper: the
+extension stages the three core SDK libraries, while mini-browser additionally
+stages AppCore. `COPY_ULTRALIGHT_BINARY=OFF` disables copying.
+
 ## Samples
 - [Sample 1 - Load Html And Bind CSharp Callback](samples/Sample%201%20-%20Load%20Html%20And%20Bind%20CSharp%20Callback)
 - [Sample 2 - Grid-based Inventory System](samples/Sample%202%20-%20Inventory%20System)

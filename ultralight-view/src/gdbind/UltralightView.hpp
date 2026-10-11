@@ -326,9 +326,9 @@ class UltralightView : public TextureRect {
         try { auto lock = view->LockJSContext(); currentBridge(lock->ctx())->bind(funcName, callback); }
         catch (const std::exception &error) { UtilityFunctions::push_error(error.what()); }
     }
-    void bindObject(godot::String propertyName, godot::Object *instance) {
+    void bindObject(godot::String propertyName, godot::Object *instance, bool query_members = false) {
         if (!view.get()) return;
-        try { auto lock = view->LockJSContext(); currentBridge(lock->ctx())->bind(propertyName, instance); }
+        try { auto lock = view->LockJSContext(); currentBridge(lock->ctx())->bindObject(propertyName, instance, query_members); }
         catch (const std::exception &error) { UtilityFunctions::push_error(error.what()); }
     }
     godot::Variant executeScript(godot::String script) {
@@ -411,7 +411,8 @@ class UltralightView : public TextureRect {
 
         ClassDB::bind_method(D_METHOD("init_view"), &UltralightView::initView);
         ClassDB::bind_method(D_METHOD("bind_func", "funcName", "callback"), &UltralightView::bindFunc);
-        ClassDB::bind_method(D_METHOD("bind_object", "propertyName", "instance"), &UltralightView::bindObject);
+        ClassDB::bind_method(D_METHOD("bind_object", "propertyName", "instance", "query_members"),
+                             &UltralightView::bindObject, DEFVAL(false));
         ClassDB::bind_method(D_METHOD("execute_script", "script"), &UltralightView::executeScript);
 
         // control

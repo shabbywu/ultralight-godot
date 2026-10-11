@@ -17,15 +17,8 @@ endif()
 
 function(ultralight_godot_stage_runtime target appcore)
   if(COPY_ULTRALIGHT_BINARY)
-    set(libraries UltralightCore WebCore Ultralight)
-    if(appcore)
-      list(APPEND libraries AppCore)
-    endif()
-    foreach(library IN LISTS libraries)
-      add_custom_command(TARGET ${target} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          "$<TARGET_FILE:Ultralight::${library}>" "$<TARGET_FILE_DIR:${target}>" VERBATIM)
-    endforeach()
+    ulbind17_copy_runtime_files(${target} INCLUDE_APPCORE ${appcore})
+    return()
   endif()
   if(APPLE)
     if(appcore)

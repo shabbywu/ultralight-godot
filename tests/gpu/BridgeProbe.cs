@@ -3,6 +3,14 @@ using Godot;
 public partial class BridgeProbe : RefCounted
 {
     public string Label { get; set; } = "中文 🐉";
+    private string _exportedLabel = "导出 🐉";
+    public int GetterReads { get; private set; }
+    [Export]
+    public string ExportedLabel
+    {
+        get { GetterReads++; return _exportedLabel; }
+        set { _exportedLabel = value; }
+    }
     public Callable Function { get; set; }
     public bool AsyncCompleted { get; private set; }
     public Variant AsyncResult { get; private set; }

@@ -50,10 +50,9 @@ inline godot::Variant BridgeContext::rejectionReason(JSValueRef value) {
     // Preserve ordinary rejection data. Error objects need an explicit text
     // conversion because their message/stack properties are non-enumerable.
     if (JSValueIsObject(ctx, value)) {
-        JSString key{godot::String("Error")};
         JSValueRef exception = nullptr;
-        auto constructor = JSObjectGetProperty(ctx, JSContextGetGlobalObject(ctx), key, &exception);
-        check(exception);
+        auto constructor = runtime_->get(JSContextGetGlobalObject(ctx), "Error");
+        Root constructor_root(ctx, constructor);
         if (JSValueIsObject(ctx, constructor) &&
             JSValueIsInstanceOfConstructor(ctx, value, JSValueToObject(ctx, constructor, nullptr), &exception)) {
             check(exception);

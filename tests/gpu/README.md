@@ -18,8 +18,8 @@ python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --task sample4
 
 | Task | Coverage |
 | --- | --- |
-| `validate` (default) | Backend selection, input, transparency and color pixels, CSS filters, SVG paths, resize/recreation, GDScript bindings and document expiry |
-| `interop` | C# objects and delegates, JS Callables, Promise/async results and rejection, GDScript default/bound arguments, callback call errors, navigation cancellation |
+| `validate` (default) | Backend selection, input, transparency and color pixels, CSS filters, SVG paths, resize/recreation, GDScript bindings, optional member queries, conversion edge cases and document expiry |
+| `interop` | C# objects and delegates, exported member queries without getter evaluation, default non-exported property access, JS Callables, Promise/async results and rejection, GDScript default/bound arguments, callback call errors, navigation cancellation |
 | `sample4` | Sample scene input, controls, backend switching, object presets, frame-limit controls and scene reload; requires `--backend gpu` |
 
 Fixtures are in [fixtures](fixtures); the runner also uses Sample 4's animation page and font. It stages an isolated project, imports assets and requires a test completion marker with no engine errors. Use `--driver` to choose a rendering driver and `--output` to retain the staged project and logs in a new or empty directory. The runner prints the Godot `user://` location containing screenshots and benchmark JSON.

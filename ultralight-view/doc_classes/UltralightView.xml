@@ -95,9 +95,16 @@
         <method name="bind_object">
             <return type="void" />
             <param index="0" name="propertyName" type="String" />
-            <param index="0" name="instance" type="Object" />
+            <param index="1" name="instance" type="Object" />
+            <param index="2" name="query_members" type="bool" default="false" />
             <description>
                 Bind [i]Object[/i] to javascript global object(aka, window).
+                The default preserves existing property access, including C# public properties without [code][Export][/code].
+                Set query_members to true to enable metadata-based member queries: Object.keys() enumerates properties,
+                while in and Reflect.has() also recognize methods. These operations do not evaluate property getters.
+                Category, group, subgroup and internal metadata entries are excluded. Missing members use normal JavaScript lookup.
+                In this mode C# properties must have [code][Export][/code] to appear in Godot property metadata and be accessible.
+                Objects returned from callbacks or nested containers keep the default compatibility mode.
                 After [b]bind_object[/b], you can access the [i]Object[/i] via below javascript.
 
                 [codeblocks]
