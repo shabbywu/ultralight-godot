@@ -54,8 +54,10 @@ jobs:
         with:
           submodules: recursive
 
-      # Install latest CMake and Ninja.
+      # The pinned vcpkg dependencies require legacy policies removed in CMake 4.
       - uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: '3.31.6'
 
       # Setup vcpkg: ensures vcpkg is downloaded and built.
       # Since vcpkg.json is being used later on to install the packages
