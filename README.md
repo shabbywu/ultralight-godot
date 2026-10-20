@@ -4,7 +4,7 @@ Display Web-Content in Godot. You can use html/css/JavaScript as like godot nati
 
 ## Installation
 
-1. download prebuilt binaray from [github release page](https://github.com/shabbywu/ultralight-godot/releases/tag/v0.2.0)
+1. download prebuilt binaray from [github release page](https://github.com/shabbywu/ultralight-godot/releases/latest)
 2. unzip archive to your godot project rootdir, you will get a folder named addons.
 3. launcher godot editor, add new Node `UltralightView` to display web-content in Godot.
 
@@ -34,6 +34,28 @@ Display Web-Content in Godot. You can use html/css/JavaScript as like godot nati
 The current source targets **Ultralight 2.0.0-beta.2**. Install the extension together with its matching SDK libraries.
 
 **Ultralight Free edition limits View animations and repaints to 60 FPS.** Removing Godot's frame cap, disabling VSync or setting `max_render_fps` to 0 cannot remove the SDK edition limit.
+
+## Release automation
+
+Publishing a GitHub Release (including a prerelease) runs both build workflows
+against its tag and uploads these assets:
+
+- `ultralight-view.<tag>.gdextension.7z`: the `addons/ultralight-view` directory,
+  including Debug and Release extensions and matching Ultralight SDK runtime
+  libraries for Windows x86_64, Linux x86_64 and macOS arm64. Extract it into your
+  Godot project root; no separate SDK download is needed.
+- `mini-browser.linux.7z`, `mini-browser.win64.7z` and
+  `mini-browser.macos-arm64.7z`: each contains the browser and its SDK runtime libraries.
+
+The workflows must be included in the release tag. Packages are uploaded after
+that workflow's builds and existing validation steps succeed. Packaging fails if
+an expected extension, executable or SDK runtime library is missing.
+
+To rebuild assets for an existing release, run the corresponding workflow from
+Actions and set `release_tag` to its tag. This checks out that tag and replaces
+assets with the same names, preserving the release description. Leave `release_tag`
+empty to build packages as Actions artifacts without uploading to a release.
+Uploads use the built-in `GITHUB_TOKEN`; no additional secret is required.
 
 ## JavaScript object bindings
 

@@ -1,14 +1,25 @@
 name: Build GDExtension
 on:
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing release tag to build and upload (empty = build only)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
 
 env:
   # Only used for the cache key. Increment version to force clean build.
   GODOT_BASE_BRANCH: main
+  RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
 
 concurrency:
-  group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ inputs.release_tag && format('refs/tags/{0}', inputs.release_tag) || github.ref }}
+  cancel-in-progress: false
 
 jobs:
   cmake:
@@ -53,6 +64,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          ref: ${{ inputs.release_tag && format('refs/tags/{0}', inputs.release_tag) || github.sha }}
 
       # The pinned vcpkg dependencies require legacy policies removed in CMake 4.
       - uses: lukka/get-cmake@latest
@@ -109,20 +121,24 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}.${{ github.ref_name }}
+          name: build-${{ matrix.artifact }}
           path: bin
-          retention-days: 1
+          if-no-files-found: error
+          retention-days: 3
 
   archive:
     name: Archive all prebuilt library
     runs-on: ubuntu-24.04
     needs:
     - cmake
+    permissions:
+      contents: write
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           path: artifacts/addons/ultralight-view/bin
+          pattern: build-*
           merge-multiple: true
       - name: generate ultralight-view.gdextension
         run: |
@@ -139,9 +155,41 @@ jobs:
           linux.debug.x86_64 = "bin/x11/libultralight-view.linux.debug.x86_64.so"
           linux.release.x86_64 = "bin/x11/libultralight-view.linux.release.x86_64.so"
           EOF
-      - name: Upload artifact
+      - name: Package GDExtension with SDK runtime libraries
+        env:
+          PACKAGE_VERSION: ${{ env.RELEASE_TAG || github.ref_name }}
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y p7zip-full
+          for platform in x11 win64 macos-arm64; do
+            case "$platform" in
+              x11) os=linux; arch=x86_64; prefix=lib; suffix=so ;;
+              win64) os=windows; arch=x86_64; prefix=; suffix=dll ;;
+              macos-arm64) os=macos; arch=arm64; prefix=lib; suffix=dylib ;;
+            esac
+            directory="artifacts/addons/ultralight-view/bin/$platform"
+            for configuration in debug release; do
+              test -s "$directory/${prefix}ultralight-view.$os.$configuration.$arch.$suffix"
+            done
+            for library in Ultralight UltralightCore WebCore; do
+              test -s "$directory/${prefix}${library}.${suffix}"
+            done
+          done
+          mkdir -p dist
+          version="${PACKAGE_VERSION//\//-}"
+          (cd artifacts && 7z a -t7z "../dist/ultralight-view.$version.gdextension.7z" addons)
+
+      - name: Upload packaged artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ultralight-view.${{ github.ref_name }}
-          path: artifacts
-          retention-days: 2
+          name: ultralight-view-package
+          path: dist/*.7z
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload release assets
+        if: ${{ env.RELEASE_TAG != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload "$RELEASE_TAG" dist/*.7z --clobber
