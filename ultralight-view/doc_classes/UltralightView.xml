@@ -1,19 +1,24 @@
 <?xml version='1.0' encoding='utf-8'?>
 <class name="UltralightView" inherits="TextureRect">
     <brief_description>Render HTML, CSS and JavaScript in a Godot TextureRect.</brief_description>
-    <description>An Ultralight web view displayed as a Godot texture. Mouse and keyboard input are forwarded from the Control to the page. The view supports CPU Surface rendering and optional GPU rendering through Godot RenderingDevice.
-
-Give the Control a nonzero size before initialization. For container-managed layouts, set [member lazy] in the scene, connect the page signals, wait for layout, then call [method init_view].
-
-Install JavaScript bindings in [signal on_window_object_ready] on every page load. Reloading or reinitializing the view replaces the document and invalidates its retained JavaScript Callables and pending Promises.</description>
-    <tutorials />
+    <description>Render HTML, CSS and JavaScript in a Godot TextureRect. Initializes automatically after entering the tree with a nonzero size. Use load_url or load_html for runtime navigation, and UltralightAPI to install application bindings before page scripts and restore them after navigation. New evaluations use shared containers and explicit UltralightResult errors. Navigation, rebuild and close invalidate document handles and pending tasks. Logic and rendering run on the Godot frame loop; AppCore is not required.</description>
+    <tutorials></tutorials>
     <methods>
+        <method name="set_accelerated">
+            <return type="void"></return>
+            <param index="0" name="enabled" type="bool"></param>
+            <description>Set [member accelerated].</description>
+        </method>
+        <method name="get_accelerated" qualifiers="const">
+            <return type="bool"></return>
+            <description>Return [member accelerated].</description>
+        </method>
         <method name="is_accelerated" qualifiers="const">
-            <return type="bool" />
+            <return type="bool"></return>
             <description>Return whether this view actually uses GPU RenderingDevice. A request through [member accelerated] can fall back to CPU if the device is unavailable or initialization fails.</description>
         </method>
         <method name="get_render_statistics" qualifiers="const">
-            <return type="Dictionary" />
+            <return type="Dictionary"></return>
             <description>Return rendering statistics. These fields are always present:
 - [code]accelerated[/code]: actual rendering backend.
 - [code]sdk_edition[/code], [code]sdk_max_fps[/code]: SDK edition and its frame-rate ceiling; zero means no edition ceiling.
@@ -25,138 +30,299 @@ Only an active accelerated view adds GPU fields: [code]gpu_available[/code], [co
 
 CPU, uninitialized and fallback views omit GPU fields. Rendering preparation timings exclude JavaScript execution outside the render call and do not represent total application frame time.</description>
         </method>
+        <method name="set_max_render_fps">
+            <return type="void"></return>
+            <param index="0" name="fps" type="int"></param>
+            <description>Set [member max_render_fps].</description>
+        </method>
+        <method name="get_max_render_fps" qualifiers="const">
+            <return type="int"></return>
+            <description>Return [member max_render_fps].</description>
+        </method>
+        <method name="get_bridge_statistics" qualifiers="const">
+            <return type="Dictionary"></return>
+            <description>Return counts of active bindings, host container proxies, host object proxies and retained JavaScript handles for diagnostics.</description>
+        </method>
+        <method name="unbind">
+            <return type="void"></return>
+            <param index="0" name="name" type="String"></param>
+            <description>Revoke the current temporary export with this name, including nested proxies.</description>
+        </method>
+        <method name="load_url">
+            <return type="UltralightTask"></return>
+            <param index="0" name="url" type="String"></param>
+            <param index="1" name="timeout" type="float" default="30.0"></param>
+            <description>Navigate to url and return a task that completes at main-document DOM readiness. timeout is in seconds, finite and greater than zero. Before layout, the request waits for a usable size.</description>
+        </method>
+        <method name="load_html">
+            <return type="UltralightTask"></return>
+            <param index="0" name="html" type="String"></param>
+            <param index="1" name="base_url" type="String" default="&quot;&quot;"></param>
+            <param index="2" name="timeout" type="float" default="30.0"></param>
+            <description>Load inline HTML with base_url for relative resources. Return a task for main-document DOM readiness; timeout is in seconds.</description>
+        </method>
+        <method name="reload">
+            <return type="UltralightTask"></return>
+            <param index="0" name="timeout" type="float" default="30.0"></param>
+            <description>Reload the current page and return its DOM readiness task. An inline page retains its HTML and base URL.</description>
+        </method>
+        <method name="wait_ready">
+            <return type="UltralightTask"></return>
+            <param index="0" name="timeout" type="float" default="30.0"></param>
+            <description>Observe the current main document. May complete immediately when already ready. Navigation invalidates an unfinished wait.</description>
+        </method>
+        <method name="wait_for_selector">
+            <return type="UltralightTask"></return>
+            <param index="0" name="selector" type="String"></param>
+            <param index="1" name="timeout" type="float" default="30.0"></param>
+            <description>Wait until a CSS selector matches an element in the current main document. Invalid selectors fail. This checks existence, not visibility.</description>
+        </method>
+        <method name="evaluate">
+            <return type="UltralightResult"></return>
+            <param index="0" name="source" type="String"></param>
+            <description>Evaluate source and return an explicit result. Arrays and objects are live shared handles; null is Nil and undefined is UltralightUndefined.</description>
+        </method>
+        <method name="evaluate_copy">
+            <return type="UltralightResult"></return>
+            <param index="0" name="source" type="String"></param>
+            <description>Evaluate source and recursively copy own enumerable data into independent Godot containers. Cycles, unsupported values and depth over 64 fail.</description>
+        </method>
+        <method name="evaluate_handle">
+            <return type="UltralightResult"></return>
+            <param index="0" name="source" type="String"></param>
+            <description>Evaluate source and retain its raw JavaScript value, including primitives, in an UltralightJSValue handle.</description>
+        </method>
+        <method name="evaluate_async">
+            <return type="UltralightTask"></return>
+            <param index="0" name="source" type="String"></param>
+            <param index="1" name="timeout" type="float" default="30.0"></param>
+            <description>Evaluate source and observe a returned Promise, or complete with an ordinary value. Timeout is in seconds. Navigation cancels delivery to the old document.</description>
+        </method>
+        <method name="is_closed" qualifiers="const">
+            <return type="bool"></return>
+            <description>Return whether close has permanently disabled this View.</description>
+        </method>
+        <method name="close">
+            <return type="void"></return>
+            <description>Permanently close this View, detach API registries, invalidate document handles and finish pending tasks.</description>
+        </method>
+        <method name="is_initialized" qualifiers="const">
+            <return type="bool"></return>
+            <description>Return whether the native SDK View exists.</description>
+        </method>
+        <method name="is_loading" qualifiers="const">
+            <return type="bool"></return>
+            <description>Return whether the main document is loading.</description>
+        </method>
+        <method name="is_document_ready" qualifiers="const">
+            <return type="bool"></return>
+            <description>Return [member document_ready].</description>
+        </method>
+        <method name="get_navigation_id" qualifiers="const">
+            <return type="int"></return>
+            <description>Return [member navigation_id].</description>
+        </method>
+        <method name="get_current_url" qualifiers="const">
+            <return type="String"></return>
+            <description>Return [member current_url].</description>
+        </method>
+        <method name="get_last_load_error" qualifiers="const">
+            <return type="UltralightError"></return>
+            <description>Return the latest structured main-document load error, or null when no error is recorded.</description>
+        </method>
+        <method name="input_text">
+            <return type="void"></return>
+            <param index="0" name="text" type="String"></param>
+            <description>Send committed text to the focused page. This does not provide IME preedit or candidate-window positioning.</description>
+        </method>
+        <method name="scroll_pixels">
+            <return type="void"></return>
+            <param index="0" name="delta" type="Vector2"></param>
+            <description>Send a pixel scroll delta to the page.</description>
+        </method>
+        <method name="set_source_type">
+            <return type="void"></return>
+            <param index="0" name="value" type="int"></param>
+            <description>Set [member source_type].</description>
+        </method>
+        <method name="get_source_type" qualifiers="const">
+            <return type="int"></return>
+            <description>Return [member source_type].</description>
+        </method>
+        <method name="set_initial_url">
+            <return type="void"></return>
+            <param index="0" name="value" type="String"></param>
+            <description>Set [member initial_url].</description>
+        </method>
+        <method name="get_initial_url" qualifiers="const">
+            <return type="String"></return>
+            <description>Return [member initial_url].</description>
+        </method>
+        <method name="set_initial_html">
+            <return type="void"></return>
+            <param index="0" name="value" type="String"></param>
+            <description>Set [member initial_html].</description>
+        </method>
+        <method name="get_initial_html" qualifiers="const">
+            <return type="String"></return>
+            <description>Return [member initial_html].</description>
+        </method>
+        <method name="set_initial_base_url">
+            <return type="void"></return>
+            <param index="0" name="value" type="String"></param>
+            <description>Set [member initial_base_url].</description>
+        </method>
+        <method name="get_initial_base_url" qualifiers="const">
+            <return type="String"></return>
+            <description>Return [member initial_base_url].</description>
+        </method>
         <method name="set_html_content">
-            <return type="void" />
-            <param index="0" name="html" type="String" />
-            <description>Set [member html] and load the inline HTML immediately if initialized.</description>
+            <return type="void"></return>
+            <param index="0" name="html" type="String"></param>
+            <description>Set [member html].</description>
         </method>
         <method name="get_html_content">
-            <return type="String" />
-            <description>Return the configured inline [member html].</description>
+            <return type="String"></return>
+            <description>Return [member html].</description>
         </method>
         <method name="set_html_url">
-            <return type="void" />
-            <param index="0" name="htmlUrl" type="String" />
-            <description>Set [member htmlUrl]. A nonempty URL loads immediately if initialized; an empty URL does not navigate.</description>
+            <return type="void"></return>
+            <param index="0" name="htmlUrl" type="String"></param>
+            <description>Set [member htmlUrl].</description>
         </method>
         <method name="get_html_url">
-            <return type="String" />
-            <description>Return the configured [member htmlUrl]. This is the source property, not a query of the current navigation URL.</description>
+            <return type="String"></return>
+            <description>Return [member htmlUrl].</description>
         </method>
         <method name="set_transparent">
-            <return type="void" />
-            <param index="0" name="is_transparent" type="bool" />
-            <description>Set [member transparent]. Call [method init_view] to apply it to an existing view.</description>
+            <return type="void"></return>
+            <param index="0" name="is_transparent" type="bool"></param>
+            <description>Set [member transparent].</description>
         </method>
         <method name="get_transparent">
-            <return type="bool" />
-            <description>Return the configured [member transparent] value.</description>
+            <return type="bool"></return>
+            <description>Return [member transparent].</description>
         </method>
         <method name="set_lazy">
-            <return type="void" />
-            <param index="0" name="is_lazy" type="bool" />
-            <description>Set [member lazy]. Set it in the scene before the node becomes ready to defer automatic initialization.</description>
+            <return type="void"></return>
+            <param index="0" name="is_lazy" type="bool"></param>
+            <description>Set [member lazy].</description>
         </method>
         <method name="get_lazy">
-            <return type="bool" />
-            <description>Return the configured [member lazy] value.</description>
+            <return type="bool"></return>
+            <description>Return [member lazy].</description>
         </method>
-        <method name="set_accelerated">
-            <return type="void" />
-            <param index="0" name="enabled" type="bool" />
-            <description>Set the requested [member accelerated] mode. Call [method init_view] to apply it to an existing view.</description>
-        </method>
-        <method name="get_accelerated">
-            <return type="bool" />
-            <description>Return the requested [member accelerated] mode. Use [method is_accelerated] for the active backend.</description>
-        </method>
-        <method name="set_max_render_fps">
-            <return type="void" />
-            <param index="0" name="fps" type="int" />
-            <description>Set [member max_render_fps]. This applies immediately and survives view reinitialization.</description>
-        </method>
-        <method name="get_max_render_fps">
-            <return type="int" />
-            <description>Return the configured [member max_render_fps].</description>
+        <method name="rebuild">
+            <return type="void"></return>
+            <description>Recreate the native View to apply backend configuration. Invalidates old document state and tasks; attached API registries are restored for the new document.</description>
         </method>
         <method name="init_view">
-            <return type="void" />
-            <description>Create or recreate the Ultralight view using the Control size and current configuration. Width and height must both be greater than zero. Resizing an already initialized Control resizes the page automatically.
-
-Reinitialization destroys the previous document, bindings and JavaScript state. A nonempty [member html] takes precedence over [member htmlUrl] during initialization. Connect [signal on_window_object_ready] before calling this method.</description>
+            <return type="void"></return>
+            <description>Compatibility alias for rebuilding. Automatic initialization and explicit load methods handle ordinary layout and loading.</description>
         </method>
         <method name="bind_func">
-            <return type="void" />
-            <param index="0" name="funcName" type="String" />
-            <param index="1" name="callback" type="Callable" />
-            <description>Expose [param callback] as a JavaScript function named [param funcName] on [code]window[/code]. Bind it in [signal on_window_object_ready] for each document.
-
-Arguments and return values are converted through Godot Variant:
-- JavaScript [code]undefined[/code] and [code]null[/code] map to Nil.
-- Booleans, strings and numbers map to [bool], [String] and [float]. JavaScript numbers are doubles.
-- Arrays and enumerable object properties map recursively to [Array] and [Dictionary].
-- JavaScript functions map to [Callable]. Their lifetime is tied to the document.
-
-Godot arrays and dictionaries returned to JavaScript become new JavaScript containers. Godot objects become object proxies. Object conversion includes enumerable prototype properties. Container cycles and nesting deeper than 64 levels are rejected. Godot string conversion truncates embedded NUL characters, including dictionary keys.</description>
+            <return type="void"></return>
+            <param index="0" name="funcName" type="String"></param>
+            <param index="1" name="callback" type="Callable"></param>
+            <description>Compatibility function export. New code should use bind_function or UltralightAPI.register_function.</description>
         </method>
         <method name="bind_object">
-            <return type="void" />
-            <param index="0" name="propertyName" type="String" />
-            <param index="1" name="instance" type="Object" />
-            <param index="2" name="query_members" type="bool" default="false" />
-            <description>Expose [param instance] as [code]window[propertyName][/code]. Install the binding in [signal on_window_object_ready] for each document.
-
-The default compatibility mode allows direct member access, including ordinary public C# properties without [code][Export][/code].
-
-With [param query_members] enabled, [code]Object.keys()[/code] enumerates Godot property metadata, and [code]in[/code] and [code]Reflect.has()[/code] also recognize methods. Queries do not invoke getters. Categories, groups, subgroups and internal metadata entries are excluded. C# properties require [code][Export][/code] in this mode. Objects returned from callbacks or nested containers keep compatibility mode.
-
-The binding exposes the object's Godot API. Use a dedicated adapter object when only a selected application API should be reachable. Freed objects no longer expose their Godot members.</description>
+            <return type="UltralightBinding"></return>
+            <param index="0" name="name" type="String"></param>
+            <param index="1" name="object" type="Object"></param>
+            <param index="2" name="options" type="UltralightBindingOptions" default="null"></param>
+            <description>Export a temporary Godot Object with optional UltralightBindingOptions. Return its revocable binding. Use UltralightAPI.register_object for persistent exports or root Array and Dictionary containers.</description>
+        </method>
+        <method name="bind_function">
+            <return type="UltralightBinding"></return>
+            <param index="0" name="name" type="String"></param>
+            <param index="1" name="function" type="Callable"></param>
+            <param index="2" name="options" type="UltralightBindingOptions" default="null"></param>
+            <description>Export a temporary global function and return its revocable UltralightBinding. For navigation persistence use UltralightAPI.</description>
+        </method>
+        <method name="bind_object_legacy">
+            <return type="void"></return>
+            <param index="0" name="propertyName" type="String"></param>
+            <param index="1" name="instance" type="Object"></param>
+            <param index="2" name="query_members" type="bool" default="false"></param>
+            <description>Compatibility entry for the old query_members boolean. New code should use UltralightAPI and UltralightBindingOptions.</description>
         </method>
         <method name="execute_script">
-            <return type="Variant" />
-            <param index="0" name="script" type="String" />
-            <description>Evaluate [param script] in the current page and return its converted result. Return Nil when the view is uninitialized, or when JavaScript evaluation or conversion fails; failures are reported in the Godot error log. Nil can also be a valid JavaScript null or undefined result.
-
-[codeblock]
-var title = view.execute_script("document.title")
-[/codeblock]</description>
+            <return type="Variant"></return>
+            <param index="0" name="script" type="String"></param>
+            <description>Compatibility evaluation using copied values and Nil/logged errors. Prefer evaluate for explicit errors and shared values.</description>
         </method>
         <method name="fire_key_event">
-            <return type="void" />
-            <param index="0" name="key_event" type="InputEventKey" />
+            <return type="void"></return>
+            <param index="0" name="key_event" type="InputEventKey"></param>
             <description>Forward a keyboard event to an initialized page. Normal Control input forwards key events while the web view has focus.</description>
         </method>
         <method name="fire_mouse_event">
-            <return type="void" />
-            <param index="0" name="position" type="Vector2" />
-            <param index="1" name="button_index" type="int" />
-            <param index="2" name="is_pressed" type="bool" />
+            <return type="void"></return>
+            <param index="0" name="position" type="Vector2"></param>
+            <param index="1" name="button_index" type="MouseButton"></param>
+            <param index="2" name="is_pressed" type="bool"></param>
             <description>Forward a mouse event to an initialized page. [param position] uses coordinates local to the web view, in pixels. Pass [code]MOUSE_BUTTON_NONE[/code] for motion, a mouse button with [param is_pressed] for press/release, or a wheel button for scrolling. The Control normally forwards its own GUI input automatically.</description>
         </method>
         <method name="on_update_frame">
-            <return type="void" />
+            <return type="void"></return>
             <description>Internal lifecycle callback. Publishes the rendered texture after Godot drawing. It is connected automatically; applications should not invoke it.</description>
         </method>
         <method name="on_resized">
-            <return type="void" />
+            <return type="void"></return>
             <description>Internal lifecycle callback. Resizes an initialized page to match the Control. It is connected automatically; applications should not invoke it.</description>
         </method>
     </methods>
     <members>
-        <member name="html" type="String" setter="set_html_content" getter="get_html_content" default="&quot;&quot;">Inline HTML. Setting it on an initialized view loads the content immediately. A nonempty value takes precedence over [member htmlUrl] when [method init_view] runs.</member>
-        <member name="htmlUrl" type="String" setter="set_html_url" getter="get_html_url" default="&quot;&quot;">Page URL. Project resources use URLs such as [code]file:///ui/index.html[/code]; HTTPS pages are also supported. Set a nonempty URL to navigate an initialized view.</member>
-        <member name="transparent" type="bool" setter="set_transparent" getter="get_transparent" default="false">Enable a transparent page background. Configure before [method init_view]. Changing it on an existing view requires reinitialization.</member>
-        <member name="lazy" type="bool" setter="set_lazy" getter="get_lazy" default="false">Defer automatic initialization when the node becomes ready. Set in the scene when layout or application setup must complete first, then call [method init_view] with a nonzero Control size.</member>
-        <member name="accelerated" type="bool" setter="set_accelerated" getter="get_accelerated" default="false">Request GPU rendering through Godot RenderingDevice. Configure before [method init_view]. Compatibility, headless and unavailable devices use CPU Surface rendering. Use [method is_accelerated] to check the actual backend. Reinitialization reloads the page.</member>
-        <member name="max_render_fps" type="int" setter="set_max_render_fps" getter="get_max_render_fps" default="0">Limit this view's animation and repaint rate. Changes apply immediately and survive [method init_view]. Zero removes the per-view limit; the SDK edition ceiling still applies (60 FPS for the public Free edition). Godot frame limits and VSync are independent.</member>
+        <member name="accelerated" type="bool" setter="set_accelerated" getter="get_accelerated">Request GPU rendering through Godot RenderingDevice. Configure before initialization. Compatibility, headless and unavailable devices use CPU Surface rendering. Use [method is_accelerated] to check the actual backend. Reinitialization reloads the page.</member>
+        <member name="max_render_fps" type="int" setter="set_max_render_fps" getter="get_max_render_fps">Limit this view's animation and repaint rate. Changes apply immediately and survive [method init_view]. Zero removes the per-view limit; the SDK edition ceiling still applies (60 FPS for the public Free edition). Godot frame limits and VSync are independent.</member>
+        <member name="source_type" type="int" setter="set_source_type" getter="get_source_type">Initial page source: 0 selects URL, 1 selects inline HTML.</member>
+        <member name="initial_url" type="String" setter="set_initial_url" getter="get_initial_url">URL loaded during initial automatic initialization when source_type is 0.</member>
+        <member name="initial_html" type="String" setter="set_initial_html" getter="get_initial_html">HTML loaded during initial automatic initialization when source_type is 1.</member>
+        <member name="initial_base_url" type="String" setter="set_initial_base_url" getter="get_initial_base_url">Base URL for relative resources in initial inline HTML.</member>
+        <member name="document_ready" type="bool" setter="" getter="is_document_ready">Whether the current main document has reached DOM readiness. Read-only.</member>
+        <member name="navigation_id" type="int" setter="" getter="get_navigation_id">Main-document generation identifier. Read-only.</member>
+        <member name="current_url" type="String" setter="" getter="get_current_url">Current main-document URL, separate from initial source configuration. Read-only.</member>
+        <member name="html" type="String" setter="set_html_content" getter="get_html_content">Legacy inline source setter. Prefer initial_html and source_type or runtime load_html.</member>
+        <member name="htmlUrl" type="String" setter="set_html_url" getter="get_html_url">Legacy URL source setter. Prefer initial_url or runtime load_url.</member>
+        <member name="transparent" type="bool" setter="set_transparent" getter="get_transparent">Enable a transparent page background. Configure before initialization. Changing it on an existing view requires reinitialization.</member>
+        <member name="lazy" type="bool" setter="set_lazy" getter="get_lazy">Defer automatic initialization. Explicit load requests initialize after layout even when lazy is enabled.</member>
     </members>
     <signals>
+        <signal name="load_started">
+            <param index="0" name="event" type="UltralightFrameEvent"></param>
+            <description>Main-document loading has started.</description>
+        </signal>
+        <signal name="window_ready">
+            <param index="0" name="event" type="UltralightFrameEvent"></param>
+            <description>Main-document global is available. API registries are installed, and page scripts have not yet executed.</description>
+        </signal>
+        <signal name="dom_ready">
+            <param index="0" name="event" type="UltralightFrameEvent"></param>
+            <description>Main-document DOM is ready. State is updated before dispatch. Does not imply application async work is finished.</description>
+        </signal>
+        <signal name="frame_dom_ready">
+            <param index="0" name="event" type="UltralightFrameEvent"></param>
+            <description>Any frame DOM is ready, including the main frame. Inspect event.is_main_frame and event.frame_id.</description>
+        </signal>
+        <signal name="load_finished">
+            <param index="0" name="event" type="UltralightFrameEvent"></param>
+            <description>Main-document loading finished. Does not guarantee permanent network inactivity.</description>
+        </signal>
+        <signal name="load_failed">
+            <param index="0" name="failure" type="Dictionary"></param>
+            <description>Main-document failure. failure contains event, error, domain and code.</description>
+        </signal>
+        <signal name="console_message">
+            <param index="0" name="message" type="Dictionary"></param>
+            <description>Page console entry. Includes level, message, source_url, line, column and navigation_id when available.</description>
+        </signal>
         <signal name="on_window_object_ready">
-            <description>Emitted when the main frame receives a fresh JavaScript window object. Install functions and object bindings here before page scripts execute. This happens again after navigation or reload.</description>
+            <description>Compatibility signal. Prefer window_ready(event) and persistent UltralightAPI registrations.</description>
         </signal>
         <signal name="on_dom_ready">
-            <description>Emitted when Ultralight reports that a document is ready. Use it for DOM-dependent JavaScript. It is not a guarantee that asynchronous requests and all external images have finished loading.</description>
+            <description>Compatibility main-document DOM signal. Prefer dom_ready(event); iframe notifications use frame_dom_ready(event).</description>
         </signal>
     </signals>
-    <constants />
+    <constants></constants>
 </class>

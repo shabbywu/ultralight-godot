@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<class name="UltralightJSObject" inherits="UltralightJSValue">
+    <brief_description>Retained live JavaScript object handle.</brief_description>
+    <description>Access properties with inherited get_value and set_value. keys returns own enumerable property names. invoke_method preserves the receiver as JavaScript this. Snapshot copies own enumerable properties into an independent Godot Dictionary.</description>
+    <tutorials></tutorials>
+    <methods></methods>
+    <members></members>
+    <signals></signals>
+    <constants></constants>
+</class>

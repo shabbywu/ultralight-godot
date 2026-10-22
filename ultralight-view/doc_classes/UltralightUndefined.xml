@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<class name="UltralightUndefined" inherits="RefCounted">
+    <brief_description>Distinct representation of JavaScript undefined.</brief_description>
+    <description>The bridge returns a shared instance for JavaScript undefined in new APIs. JavaScript null remains Godot Nil. Legacy execute_script preserves its original conversion behavior.</description>
+    <tutorials></tutorials>
+    <methods></methods>
+    <members></members>
+    <signals></signals>
+    <constants></constants>
+</class>

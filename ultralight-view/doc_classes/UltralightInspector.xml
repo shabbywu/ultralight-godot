@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<class name="UltralightInspector" inherits="UltralightView">
+    <brief_description>Embedded developer tools for an UltralightView.</brief_description>
+    <description>Set target_view and give the Control a nonzero size. Developer tools are created when visible; matching SDK resources are embedded in the extension and work in exported projects. The Inspector follows target rebuilds and releases its association when the target disappears. The inherited loading APIs are intended for normal views; configure this node through target_view.</description>
+    <tutorials></tutorials>
+    <methods>
+        <method name="set_target_view">
+            <return type="void"></return>
+            <param index="0" name="view" type="UltralightView"></param>
+            <description>Set [member target_view].</description>
+        </method>
+        <method name="get_target_view" qualifiers="const">
+            <return type="UltralightView"></return>
+            <description>Return [member target_view].</description>
+        </method>
+    </methods>
+    <members>
+        <member name="target_view" type="Object" setter="set_target_view" getter="get_target_view">Target page to inspect.</member>
+    </members>
+    <signals></signals>
+    <constants></constants>
+</class>

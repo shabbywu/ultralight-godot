@@ -33,11 +33,11 @@ class QueryProbe extends RefCounted:
 func check_members(view: Control) -> void:
     for query in [false, true]:
         var holder: Array = [QueryProbe.new()]
-        view.call("bind_object", "reentrant_probe", holder[0], query)
+        view.call("bind_object_legacy", "reentrant_probe", holder[0], query)
         view.call("bind_func", "free_reentrant_probe", func(): holder.clear())
         check(view.call("execute_script", "(()=>{try{reentrant_probe.getter_reads={get x(){free_reentrant_probe();return 1}};return false}catch(e){return /no longer valid/.test(e.message)}})()") == true, "setter accessed an object freed by JS conversion")
     var probe := QueryProbe.new()
-    view.call("bind_object", "query_probe", probe, true)
+    view.call("bind_object_legacy", "query_probe", probe, true)
     var reads := probe.getter_reads
     var keys = view.call("execute_script", "Object.keys(query_probe)")
     check(keys is Array and "counted" in keys and "echo" not in keys, "query mode did not enumerate properties only")
@@ -90,7 +90,7 @@ func check_bridge(view: Control) -> void:
     check(view.call("execute_script", "(function(){try{var x={};x.self=x;godot_echo(x);return false;}catch(e){return /Cyclic/.test(e.message);}})()") == true, "cyclic JS data did not raise a catchable exception")
     check(view.call("execute_script", "(function(){try{godot_echo({get x(){throw new Error('getter failed');}});return false;}catch(e){return /getter failed/.test(e.message);}})()") == true, "throwing getter escaped the bridge")
     var object := BridgeProbe.new()
-    view.call("bind_object", "probe", object)
+    view.call("bind_object_legacy", "probe", object)
     check(view.call("execute_script", "probe.label='修改 🐉';probe.echo(probe.label)") == "修改 🐉" and object.label == "修改 🐉", "Godot object method/property binding failed")
     object = null
     check(view.call("execute_script", "(function(){try{probe.echo('freed');return false;}catch(e){return /no longer valid/.test(e.message);}})()") == true, "freed Godot object was accessed")

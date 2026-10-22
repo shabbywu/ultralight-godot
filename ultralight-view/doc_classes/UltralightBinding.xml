@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<class name="UltralightBinding" inherits="RefCounted">
+    <brief_description>Revocable export owned by one document.</brief_description>
+    <description>Call close to revoke the exported function or object and its nested proxies. Dropping this reference does not automatically revoke the export. Closing a replaced binding never removes its replacement.</description>
+    <tutorials></tutorials>
+    <methods>
+        <method name="close">
+            <return type="void"></return>
+            <description>Revoke the export and its nested proxies. Idempotent.</description>
+        </method>
+        <method name="is_closed" qualifiers="const">
+            <return type="bool"></return>
+            <description>Return whether the binding was revoked or its document has expired.</description>
+        </method>
+    </methods>
+    <members></members>
+    <signals></signals>
+    <constants></constants>
+</class>

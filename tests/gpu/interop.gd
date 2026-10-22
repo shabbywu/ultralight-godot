@@ -22,11 +22,11 @@ func run() -> void:
         if not failures.is_empty(): break
         check(view.call("is_accelerated") == (accelerated and expect_gpu), "interop used the wrong backend/fallback")
         var probe = load("res://BridgeProbe.cs").new()
-        view.call("bind_object", "csharp", probe)
+        view.call("bind_object_legacy", "csharp", probe)
         view.call("bind_func", "csharp_callback", probe.call("GetCallback"))
         check(view.call("execute_script", "csharp.Label='修改 🐉';csharp.Echo(csharp.Label)") == "修改 🐉", "C# object method/property binding failed")
         check(probe.get("Label") == "修改 🐉", "C# property setter did not run")
-        view.call("bind_object", "csharp_query", probe, true)
+        view.call("bind_object_legacy", "csharp_query", probe, true)
         var reads: int = probe.get("GetterReads")
         var keys = view.call("execute_script", "Object.keys(csharp_query)")
         check(keys is Array and "ExportedLabel" in keys and "Label" not in keys and "Echo" not in keys, "C# query metadata did not distinguish exported properties")

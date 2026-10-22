@@ -9,3 +9,5 @@
 #include "godot_object.hpp"
 #include "js_callable.hpp"
 #include "js_promise.hpp"
+
+#include "js_value.hpp"

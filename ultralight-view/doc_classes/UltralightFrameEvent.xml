@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='utf-8'?>
+<class name="UltralightFrameEvent" inherits="RefCounted">
+    <brief_description>Read-only document and frame identity for lifecycle signals.</brief_description>
+    <description>Immutable information for one lifecycle callback. navigation_id identifies the main document generation; frame_id identifies the SDK frame. A signal handler can navigate or close the View, so retain and compare the generation when scheduling later work.</description>
+    <tutorials></tutorials>
+    <methods>
+        <method name="get_navigation_id" qualifiers="const">
+            <return type="int"></return>
+            <description>Return [member navigation_id].</description>
+        </method>
+        <method name="get_frame_id" qualifiers="const">
+            <return type="int"></return>
+            <description>Return [member frame_id].</description>
+        </method>
+        <method name="is_main_frame" qualifiers="const">
+            <return type="bool"></return>
+            <description>Return [member is_main_frame].</description>
+        </method>
+        <method name="get_url" qualifiers="const">
+            <return type="String"></return>
+            <description>Return [member url].</description>
+        </method>
+    </methods>
+    <members>
+        <member name="navigation_id" type="int" setter="" getter="get_navigation_id">Main-document generation identifier. Read-only.</member>
+        <member name="frame_id" type="int" setter="" getter="get_frame_id">SDK frame identifier. Read-only.</member>
+        <member name="is_main_frame" type="bool" setter="" getter="is_main_frame">Whether this event belongs to the main document.</member>
+        <member name="url" type="String" setter="" getter="get_url">URL supplied by the SDK for this frame event.</member>
+    </members>
+    <signals></signals>
+    <constants></constants>
+</class>

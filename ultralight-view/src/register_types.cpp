@@ -11,11 +11,14 @@
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/godot.hpp>
 
+#include "gdbind/api/Types.hpp"
+#include "gdbind/api/UltralightAPI.hpp"
 #include "gdbind/detail/JavaScriptBridge.hpp"
 
 #include "doc_data_registration.hpp"
 #include "gdbind/CPUSurfaceShader.hpp"
 #include "gdbind/GPUDisplayShader.hpp"
+#include "gdbind/UltralightInspector.hpp"
 #include "gdbind/UltralightRenderer.hpp"
 #include "gdbind/UltralightSingleton.hpp"
 #include "gdbind/UltralightView.hpp"
@@ -26,7 +29,19 @@ using namespace godot;
 static void initialize_module(ModuleInitializationLevel p_level) {
     if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
         gdbind::setup::setup_ultralight_platform();
+        GDREGISTER_CLASS(gdbind::UltralightError);
+        GDREGISTER_CLASS(gdbind::UltralightResult);
+        GDREGISTER_CLASS(gdbind::UltralightTask);
+        GDREGISTER_CLASS(gdbind::UltralightFrameEvent);
+        GDREGISTER_CLASS(gdbind::UltralightJSValue);
+        GDREGISTER_CLASS(gdbind::UltralightJSArray);
+        GDREGISTER_CLASS(gdbind::UltralightJSObject);
+        GDREGISTER_CLASS(gdbind::UltralightUndefined);
+        GDREGISTER_CLASS(gdbind::UltralightBindingOptions);
+        GDREGISTER_CLASS(gdbind::UltralightBinding);
+        GDREGISTER_CLASS(gdbind::UltralightAPI);
         GDREGISTER_CLASS(gdbind::UltralightView);
+        GDREGISTER_CLASS(gdbind::UltralightInspector);
         GDREGISTER_CLASS(gdbind::UltralightSingleton);
         static gdbind::UltralightSingleton *singleton = memnew(gdbind::UltralightSingleton);
         godot::Engine::get_singleton()->register_singleton("UltralightSingleton", singleton);
@@ -39,10 +54,12 @@ static void initialize_module(ModuleInitializationLevel p_level) {
 static void uninitialize_module(ModuleInitializationLevel p_level) {
     if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
         gdbind::BridgeContext::shutdown();
+        gdbind::UltralightUndefined::shutdown();
         auto singleton = static_cast<gdbind::UltralightSingleton *>(
             godot::Engine::get_singleton()->get_singleton("UltralightSingleton"));
         godot::Engine::get_singleton()->unregister_singleton("UltralightSingleton");
         singleton->shutdown();
+        ulbind17::jsc::Bridge::collectFinalizers();
         godot::memdelete(singleton);
         gdbind::GPUDisplayShader::shutdown();
         gdbind::CPUSurfaceShader::shutdown();

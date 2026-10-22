@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='utf-8'?>
+<class name="UltralightJSValue" inherits="RefCounted">
+    <brief_description>Document-scoped handle for checked JavaScript access.</brief_description>
+    <description>Use handles only on the Godot main thread and in the document which created them. Access methods return UltralightResult. Nested arrays and objects stay live; snapshot creates independent Godot containers. close releases the handle and affects aliases sharing it. Navigation or binding revocation invalidates the handle. Snapshot traversal rejects cycles and nesting deeper than 64 levels.</description>
+    <tutorials></tutorials>
+    <methods>
+        <method name="get_value">
+            <return type="UltralightResult"></return>
+            <param index="0" name="key" type="Variant"></param>
+            <description>Read an indexed or named property using shared conversion.</description>
+        </method>
+        <method name="set_value">
+            <return type="UltralightResult"></return>
+            <param index="0" name="key" type="Variant"></param>
+            <param index="1" name="value" type="Variant"></param>
+            <description>Write an indexed or named property. Enforce the source container and read-only constraints.</description>
+        </method>
+        <method name="utf8_bytes">
+            <return type="UltralightResult"></return>
+            <description>Convert the retained value to UTF-8 bytes in a successful PackedByteArray result. Preserves embedded NUL bytes which Godot String cannot represent.</description>
+        </method>
+        <method name="snapshot">
+            <return type="UltralightResult"></return>
+            <description>Create an independent recursive copy of supported data. Reject cycles and depth over 64.</description>
+        </method>
+        <method name="keys">
+            <return type="UltralightResult"></return>
+            <description>Return own enumerable keys in the successful result.</description>
+        </method>
+        <method name="size">
+            <return type="int"></return>
+            <description>Return array length or own enumerable key count. Return -1 when closed or access fails; zero is a valid empty collection.</description>
+        </method>
+        <method name="append">
+            <return type="UltralightResult"></return>
+            <param index="0" name="value" type="Variant"></param>
+            <description>Append a value to an Array using shared conversion.</description>
+        </method>
+        <method name="remove">
+            <return type="UltralightResult"></return>
+            <param index="0" name="key" type="Variant"></param>
+            <description>Delete a property using JavaScript delete semantics. Array indices are not shifted. Return a failed result when the property is not configurable.</description>
+        </method>
+        <method name="invoke_method">
+            <return type="UltralightResult"></return>
+            <param index="0" name="name" type="String"></param>
+            <param index="1" name="arguments" type="Array"></param>
+            <description>Call the named function with this object as its receiver.</description>
+        </method>
+        <method name="invoke">
+            <return type="UltralightResult"></return>
+            <param index="0" name="arguments" type="Array"></param>
+            <description>Call a retained function with the supplied argument Array.</description>
+        </method>
+        <method name="close">
+            <return type="void"></return>
+            <description>Release this retained value and invalidate aliases of the same handle.</description>
+        </method>
+        <method name="is_closed" qualifiers="const">
+            <return type="bool"></return>
+            <description>Return whether explicitly closed or its document or binding has expired.</description>
+        </method>
+    </methods>
+    <members></members>
+    <signals></signals>
+    <constants></constants>
+</class>

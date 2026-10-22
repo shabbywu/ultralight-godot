@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='utf-8'?>
+<class name="UltralightBindingOptions" inherits="RefCounted">
+    <brief_description>Member visibility and conversion options for an export.</brief_description>
+    <description>Options are captured when registering or binding. Changing this resource afterwards does not alter an existing export. read_only applies to nested writes; it does not infer whether methods have side effects.</description>
+    <tutorials></tutorials>
+    <methods>
+        <method name="get_copy_containers" qualifiers="const">
+            <return type="bool"></return>
+            <description>Return [member copy_containers].</description>
+        </method>
+        <method name="set_copy_containers">
+            <return type="void"></return>
+            <param index="0" name="value" type="bool"></param>
+            <description>Set [member copy_containers].</description>
+        </method>
+        <method name="get_read_only" qualifiers="const">
+            <return type="bool"></return>
+            <description>Return [member read_only].</description>
+        </method>
+        <method name="set_read_only">
+            <return type="void"></return>
+            <param index="0" name="value" type="bool"></param>
+            <description>Set [member read_only].</description>
+        </method>
+        <method name="get_members" qualifiers="const">
+            <return type="PackedStringArray"></return>
+            <description>Return [member members].</description>
+        </method>
+        <method name="set_members">
+            <return type="void"></return>
+            <param index="0" name="value" type="PackedStringArray"></param>
+            <description>Set [member members].</description>
+        </method>
+    </methods>
+    <members>
+        <member name="copy_containers" type="bool" setter="set_copy_containers" getter="get_copy_containers">Use recursive value conversion instead of shared containers for this export. Defaults to false.</member>
+        <member name="read_only" type="bool" setter="set_read_only" getter="get_read_only">Reject writes to this export and nested containers. Method side effects remain the application responsibility. Defaults to false.</member>
+        <member name="members" type="PackedStringArray" setter="set_members" getter="get_members">Optional root-object member allowlist. Empty uses the public member rules. Enumeration does not invoke getters.</member>
+    </members>
+    <signals></signals>
+    <constants></constants>
+</class>

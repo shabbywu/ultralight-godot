@@ -4,34 +4,29 @@
     <description>The engine-registered singleton shared by all Ultralight views. Obtain it with [code]Engine.get_singleton("UltralightSingleton")[/code] in GDScript, or [code]Engine.Singleton.GetSingleton("UltralightSingleton")[/code] in C#.
 
 Logic updates are connected to the SceneTree process frame, and rendering to RenderingServer frame_pre_draw. Most applications need no manual update calls.</description>
-    <tutorials />
+    <tutorials></tutorials>
     <methods>
         <method name="update_logic">
-            <return type="void" />
+            <return type="void"></return>
             <description>Update timers and dispatch callbacks. This runs automatically each SceneTree process frame. If automatic processing is disabled with [method set_process], call this regularly from the application loop.</description>
         </method>
         <method name="update_frame">
-            <return type="void" />
+            <return type="void"></return>
             <description>Internal lifecycle callback. Render active views to CPU surfaces or GPU render targets. It is connected automatically to RenderingServer frame_pre_draw; applications should not invoke it manually.</description>
         </method>
         <method name="set_process">
-            <return type="void" />
-            <param index="0" name="process" type="bool" />
+            <return type="void"></return>
+            <param index="0" name="process" type="bool"></param>
             <description>Enable or disable automatic logic updates. This does not disconnect automatic rendering. When disabled, the application must call [method update_logic] to advance timers and callbacks.</description>
         </method>
-        <method name="start_remove_inspector_server">
-            <return type="bool" />
-            <param index="0" name="address" type="String" />
-            <param index="1" name="port" type="int" />
-            <description>Start the Ultralight remote inspector server on [param address] and [param port]. Return whether the SDK successfully starts the server. Connect using the matching mini-browser package from the plugin release. Use a loopback address for local inspection.
-
-[codeblock]
-var renderer = Engine.get_singleton("UltralightSingleton")
-renderer.start_remove_inspector_server("127.0.0.1", 19999)
-[/codeblock]</description>
+        <method name="start_remote_inspector_server">
+            <return type="bool"></return>
+            <param index="0" name="address" type="String"></param>
+            <param index="1" name="port" type="int"></param>
+            <description>Start the remote Inspector server on address and port; return whether it starts successfully. Call on the Godot main thread and connect with the matching mini-browser package.</description>
         </method>
     </methods>
-    <members />
-    <signals />
-    <constants />
+    <members></members>
+    <signals></signals>
+    <constants></constants>
 </class>

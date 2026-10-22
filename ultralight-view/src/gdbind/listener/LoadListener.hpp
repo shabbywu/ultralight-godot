@@ -15,8 +15,9 @@ struct LoadListener : public ultralight::LoadListener {
     ///
     virtual void OnBeginLoading(ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
                                 const ultralight::String &url) {
-        if (onBeginLoading)
-            onBeginLoading(caller, frame_id, is_main_frame, url);
+        auto callback = onBeginLoading;
+        if (callback)
+            callback(caller, frame_id, is_main_frame, url);
     }
     std::function<void(ultralight::View *caller, uint64_t frame_id, bool is_main_frame, const ultralight::String &url)>
         onBeginLoading;
@@ -32,8 +33,9 @@ struct LoadListener : public ultralight::LoadListener {
     ///
     virtual void OnFinishLoading(ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
                                  const ultralight::String &url) {
-        if (onFinishLoading) {
-            onFinishLoading(caller, frame_id, is_main_frame, url);
+        auto callback = onFinishLoading;
+        if (callback) {
+            callback(caller, frame_id, is_main_frame, url);
         }
     }
     std::function<void(ultralight::View *caller, uint64_t frame_id, bool is_main_frame, const ultralight::String &url)>
@@ -57,8 +59,9 @@ struct LoadListener : public ultralight::LoadListener {
     virtual void OnFailLoading(ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
                                const ultralight::String &url, const ultralight::String &description,
                                const ultralight::String &error_domain, int error_code) {
-        if (onFailLoading) {
-            onFailLoading(caller, frame_id, is_main_frame, url, description, error_domain, error_code);
+        auto callback = onFailLoading;
+        if (callback) {
+            callback(caller, frame_id, is_main_frame, url, description, error_domain, error_code);
         }
     }
     std::function<void(ultralight::View *caller, uint64_t frame_id, bool is_main_frame, const ultralight::String &url,
@@ -85,8 +88,9 @@ struct LoadListener : public ultralight::LoadListener {
     ///
     virtual void OnWindowObjectReady(ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
                                      const ultralight::String &url) {
-        if (onWindowObjectReady) {
-            onWindowObjectReady(caller, frame_id, is_main_frame, url);
+        auto callback = onWindowObjectReady;
+        if (callback) {
+            callback(caller, frame_id, is_main_frame, url);
         }
     }
     std::function<void(ultralight::View *caller, uint64_t frame_id, bool is_main_frame, const ultralight::String &url)>
@@ -106,8 +110,9 @@ struct LoadListener : public ultralight::LoadListener {
     ///
     virtual void OnDOMReady(ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
                             const ultralight::String &url) {
-        if (onDOMReady) {
-            onDOMReady(caller, frame_id, is_main_frame, url);
+        auto callback = onDOMReady;
+        if (callback) {
+            callback(caller, frame_id, is_main_frame, url);
         }
     }
     std::function<void(ultralight::View *caller, uint64_t frame_id, bool is_main_frame, const ultralight::String &url)>
@@ -117,7 +122,8 @@ struct LoadListener : public ultralight::LoadListener {
     /// Called when the session history (back/forward state) is modified.
     ///
     virtual void OnUpdateHistory(ultralight::View *caller) {
-        if (onUpdateHistory) {
+        auto callback = onUpdateHistory;
+        if (callback) {
             onUpdateHistory(caller);
         }
     }

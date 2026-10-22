@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='utf-8'?>
+<class name="UltralightResult" inherits="RefCounted">
+    <brief_description>Explicit success value or structured failure.</brief_description>
+    <description>Inspect ok before reading value or error. Successful null has a Nil value; JavaScript undefined uses UltralightUndefined. Errors are not printed implicitly by the new evaluation APIs.</description>
+    <tutorials></tutorials>
+    <methods>
+        <method name="is_ok" qualifiers="const">
+            <return type="bool"></return>
+            <description>Return [member ok].</description>
+        </method>
+        <method name="get_value" qualifiers="const">
+            <return type="Variant"></return>
+            <description>Return [member value].</description>
+        </method>
+        <method name="get_error" qualifiers="const">
+            <return type="UltralightError"></return>
+            <description>Return [member error].</description>
+        </method>
+    </methods>
+    <members>
+        <member name="ok" type="bool" setter="" getter="is_ok">Whether this result is successful.</member>
+        <member name="value" type="Variant" setter="" getter="get_value">Converted success value. Nil is a valid successful null.</member>
+        <member name="error" type="UltralightError" setter="" getter="get_error">Structured failure when ok is false; null on success.</member>
+    </members>
+    <signals></signals>
+    <constants></constants>
+</class>

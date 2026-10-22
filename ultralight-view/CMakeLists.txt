@@ -107,16 +107,26 @@ execute_process(
     "${CMAKE_CURRENT_LIST_DIR}/doc_classes"
   WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 
+# The Inspector is embedded so it also works in exported projects.
+find_package(PhysFS CONFIG REQUIRED)
+get_target_property(ULTRALIGHT_INSPECTOR_DIR ultralight-sdk ULTRALIGHT_INSPECTOR_DIR)
+file(GLOB_RECURSE INSPECTOR_INPUTS CONFIGURE_DEPENDS "${ULTRALIGHT_INSPECTOR_DIR}/*")
+set(INSPECTOR_ASSETS "${CMAKE_CURRENT_BINARY_DIR}/inspector_assets")
+add_custom_command(OUTPUT "${INSPECTOR_ASSETS}/inspector.cpp" "${INSPECTOR_ASSETS}/inspector.h" "${INSPECTOR_ASSETS}/archive.h" "${INSPECTOR_ASSETS}/ui.cpp" "${INSPECTOR_ASSETS}/ui.h"
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/mini-browser/embed_assets.py"
+    "${CMAKE_SOURCE_DIR}/mini-browser/assets/ui" "${ULTRALIGHT_INSPECTOR_DIR}" "${INSPECTOR_ASSETS}"
+  DEPENDS ${INSPECTOR_INPUTS} "${CMAKE_SOURCE_DIR}/mini-browser/embed_assets.py" VERBATIM)
+
 # Get Sources
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.c**)
 file(GLOB_RECURSE HEADERS include/*.h**)
 
 # Define our godot-cpp library
-add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS} "${GENERATED_SHADERS}")
+add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS} "${GENERATED_SHADERS}" "${INSPECTOR_ASSETS}/inspector.cpp")
 
 target_include_directories(${PROJECT_NAME} SYSTEM
-                           PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src ${CMAKE_CURRENT_BINARY_DIR}/generated)
-target_link_libraries(${PROJECT_NAME} godot-cpp::godot-cpp ulbind17::ulbind17)
+                           PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src ${CMAKE_CURRENT_BINARY_DIR}/generated ${INSPECTOR_ASSETS})
+target_link_libraries(${PROJECT_NAME} godot-cpp::godot-cpp ulbind17::ulbind17 $<IF:$<TARGET_EXISTS:PhysFS::PhysFS>,PhysFS::PhysFS,PhysFS::PhysFS-static>)
 
 # Create the correct name (godot.os.build_type.system_bits) Synchronized with
 # godot-cpp's CMakeLists.txt

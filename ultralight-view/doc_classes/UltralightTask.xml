@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<class name="UltralightTask" inherits="RefCounted">
+    <brief_description>Single-completion asynchronous operation with a retained result.</brief_description>
+    <description>Check is_completed before awaiting completed because an operation may finish synchronously. Read get_result afterwards; the result remains available. Only the first terminal operation takes effect. Cancel stops this observation or delivery without undoing business side effects or forcibly terminating a JavaScript Promise. Public resolve/reject are used by register_async handlers.</description>
+    <tutorials></tutorials>
+    <methods>
+        <method name="is_completed" qualifiers="const">
+            <return type="bool"></return>
+            <description>Return whether a terminal result is retained.</description>
+        </method>
+        <method name="get_result" qualifiers="const">
+            <return type="UltralightResult"></return>
+            <description>Return the retained result, or null before completion.</description>
+        </method>
+        <method name="resolve">
+            <return type="void"></return>
+            <param index="0" name="value" type="Variant" default="null"></param>
+            <description>Complete a host async request successfully. Repeated completion is ignored. Main thread only.</description>
+        </method>
+        <method name="reject">
+            <return type="void"></return>
+            <param index="0" name="code" type="String"></param>
+            <param index="1" name="message" type="String"></param>
+            <description>Complete a host async request with the provided error code and message. Main thread only.</description>
+        </method>
+        <method name="cancel">
+            <return type="void"></return>
+            <description>Complete with Cancelled if still pending. Does not undo already executed operations. Main thread only.</description>
+        </method>
+    </methods>
+    <members></members>
+    <signals>
+        <signal name="completed">
+            <description>Emitted once when the task reaches its terminal state. Check is_completed before awaiting, then call get_result.</description>
+        </signal>
+    </signals>
+    <constants></constants>
+</class>

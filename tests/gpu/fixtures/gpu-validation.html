@@ -32,7 +32,7 @@ img { width: 96px; height: 72px; image-rendering: auto; }
 <p><button id="click" onclick="clicked()">Click / 点击</button> <span id="counter">0</span></p>
 </div>
 <script>
-window.bridgeAtFirstScript = typeof __godot_view_instance === 'object' && typeof godot_clicked === 'function';
+window.bridgeAtFirstScript = typeof godot_clicked === 'function';
 window.clickCount = 0;
 function clicked() {
   document.getElementById('counter').textContent = String(++window.clickCount);
