@@ -14,6 +14,9 @@ python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --backend compatibility
 python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --backend headless
 python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --task interop
 python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --task sample4
+python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --task api --backend headless
+python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --task experience --backend compatibility
+python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --task containers --backend headless
 ```
 
 | Task | Coverage |
@@ -21,6 +24,9 @@ python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --task sample4
 | `validate` (default) | Backend selection, input, transparency and color pixels, CSS filters, SVG paths, resize/recreation, GDScript bindings, optional member queries, conversion edge cases and document expiry |
 | `interop` | C# objects and delegates, exported member queries without getter evaluation, default non-exported property access, JS Callables, Promise/async results and rejection, GDScript default/bound arguments, callback call errors, navigation cancellation |
 | `sample4` | Sample scene input, controls, backend switching, object presets, frame-limit controls and scene reload; requires `--backend gpu` |
+| `api` | Registry installation before page scripts, main/frame signals, HTTP redirects, multiple views, namespace conflicts, shared identity/cycles, snapshots, revocation, Promise tasks and reentrant close |
+| `experience` | Real-window text clipboard, committed Chinese text, CSS cursor, focus handoff and embedded Inspector rebuild/target removal |
+| `containers` | 1k/10k/100k native object graphs, construction/exposure, sparse reads, full traversal and snapshots; writes containers.json |
 
 Fixtures are in [fixtures](fixtures); the runner also uses Sample 4's animation page and font. It stages an isolated project, imports assets and requires a test completion marker with no engine errors. Use `--driver` to choose a rendering driver and `--output` to retain the staged project and logs in a new or empty directory. The runner prints the Godot `user://` location containing screenshots and benchmark JSON.
 

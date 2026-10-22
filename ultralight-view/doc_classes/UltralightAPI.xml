@@ -1,0 +1,66 @@
+<?xml version='1.0' encoding='utf-8'?>
+<class name="UltralightAPI" inherits="RefCounted">
+    <brief_description>Persistent application API registry with a caller-selected JavaScript namespace.</brief_description>
+    <description>Create with create(namespace), register functions or objects, then attach to one or more UltralightView nodes. Namespaces are single ASCII JavaScript identifiers and must not collide with existing page globals. Registrations are installed before window_ready and page scripts on every new document. Shared containers are the default. Unregistering, detaching or closing also revokes cached JavaScript references. The reserved namespace member $bridge provides copy(value) and get/set(dictionary, key, ...). All bridge access must occur on the Godot main thread.</description>
+    <tutorials></tutorials>
+    <methods>
+        <method name="create" qualifiers="static">
+            <return type="UltralightAPI"></return>
+            <param index="0" name="namespace" type="String"></param>
+            <description>Create a registry for one ASCII JavaScript identifier. Invalid or reserved identifiers return null. Does not export a global until attached.</description>
+        </method>
+        <method name="get_namespace" qualifiers="const">
+            <return type="String"></return>
+            <description>Return [member namespace].</description>
+        </method>
+        <method name="is_closed" qualifiers="const">
+            <return type="bool"></return>
+            <description>Return whether this registry has been closed.</description>
+        </method>
+        <method name="register_function">
+            <return type="UltralightResult"></return>
+            <param index="0" name="name" type="String"></param>
+            <param index="1" name="function" type="Callable"></param>
+            <param index="2" name="options" type="UltralightBindingOptions" default="null"></param>
+            <description>Register or replace a synchronous callable. Shared conversion is the default for arguments and results. Return a Result for installation success.</description>
+        </method>
+        <method name="register_async">
+            <return type="UltralightResult"></return>
+            <param index="0" name="name" type="String"></param>
+            <param index="1" name="handler" type="Callable"></param>
+            <param index="2" name="options" type="UltralightBindingOptions" default="null"></param>
+            <description>Register a handler receiving (UltralightTask request, Array arguments). Resolve or reject the request on the main thread; JavaScript receives a Promise.</description>
+        </method>
+        <method name="register_object">
+            <return type="UltralightResult"></return>
+            <param index="0" name="name" type="String"></param>
+            <param index="1" name="object" type="Variant"></param>
+            <param index="2" name="options" type="UltralightBindingOptions" default="null"></param>
+            <description>Register or replace a Godot object, Array or Dictionary. Apply optional member, read-only and copy settings. Nil is rejected.</description>
+        </method>
+        <method name="unregister">
+            <return type="void"></return>
+            <param index="0" name="name" type="String"></param>
+            <description>Remove this registration from all attached views and revoke its old proxies.</description>
+        </method>
+        <method name="attach">
+            <return type="UltralightResult"></return>
+            <param index="0" name="view" type="Object"></param>
+            <description>Attach to an UltralightView, immediately if a document exists and automatically on later documents. Idempotent; return an error for namespace conflicts.</description>
+        </method>
+        <method name="detach">
+            <return type="void"></return>
+            <param index="0" name="view" type="Object"></param>
+            <description>Remove this registry from the given View and revoke its namespace without closing the View. Idempotent.</description>
+        </method>
+        <method name="close">
+            <return type="void"></return>
+            <description>Detach all views, revoke proxies and clear definitions. Idempotent.</description>
+        </method>
+    </methods>
+    <members>
+        <member name="namespace" type="String" setter="" getter="get_namespace">Caller-selected JavaScript global name. Read-only.</member>
+    </members>
+    <signals></signals>
+    <constants></constants>
+</class>

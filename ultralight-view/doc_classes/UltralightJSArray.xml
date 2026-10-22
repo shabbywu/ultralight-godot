@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<class name="UltralightJSArray" inherits="UltralightJSValue">
+    <brief_description>Retained live JavaScript Array handle.</brief_description>
+    <description>Array access uses inherited get_value, set_value, append and remove. remove follows JavaScript delete semantics and does not shift later indices. A snapshot returns an independent Godot Array. Shared handles retain JavaScript identity and can represent cycles.</description>
+    <tutorials></tutorials>
+    <methods></methods>
+    <members></members>
+    <signals></signals>
+    <constants></constants>
+</class>

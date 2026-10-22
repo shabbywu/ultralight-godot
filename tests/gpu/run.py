@@ -1,14 +1,32 @@
 #!/usr/bin/env python3
 """Stage a disposable Godot project and run real-device/fallback validation."""
 import argparse
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import platform
 import re
 import shutil
 import subprocess
 import tempfile
+import threading
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+class NavigationFixture(BaseHTTPRequestHandler):
+    def log_message(self, *_args):
+        pass
+
+    def do_GET(self):
+        if self.path in ['/redirect', '/redirect-again']:
+            self.send_response(302)
+            self.send_header('Location', '/redirect-again' if self.path == '/redirect' else '/page')
+            self.end_headers()
+            return
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.end_headers()
+        self.wfile.write(b'<script>globalThis.redirectResult=game.sum(20,22)</script><div id="redirected">done</div>')
 
 
 def run(command, log, timeout=120, success_marker=None):
@@ -32,7 +50,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--godot', default='godot', help='Godot executable name on PATH or executable path (.NET build for interop/sample4)')
     parser.add_argument('--library', required=True, type=Path, help='Built ultralight-view shared library; SDK binaries must be beside it')
-    parser.add_argument('--task', choices=['validate', 'interop', 'sample4', 'benchmark'], default='validate')
+    parser.add_argument('--task', choices=['validate', 'interop', 'sample4', 'benchmark', 'api', 'containers', 'experience'], default='validate')
     parser.add_argument('--backend', choices=['gpu', 'cpu', 'compatibility', 'headless'], default='gpu')
     parser.add_argument('--driver', help='Override the RenderingDevice driver; otherwise use the Godot default')
     parser.add_argument('--objects', type=int, default=480, choices=[120,240,480,960,1440], help='Animated objects for the benchmark')
@@ -87,6 +105,10 @@ renderer/rendering_method="mobile"
     for path in (ROOT/'tests/gpu').iterdir():
         if path.suffix == '.gd':
             shutil.copy2(path, stage/path.name)
+    if args.task in ['api', 'containers', 'experience']:
+        for path in (ROOT/'tests/api').iterdir():
+            if path.suffix == '.gd':
+                shutil.copy2(path, stage/path.name)
     if args.task == 'interop':
         shutil.copy2(ROOT/'tests/gpu/BridgeProbe.cs', stage/'BridgeProbe.cs')
         shutil.copy2(ROOT/'tests/gpu/BridgeInterop.csproj', stage/'BridgeInterop.csproj')
@@ -122,7 +144,7 @@ renderer/rendering_method="mobile"
         base += ['--rendering-method', 'gl_compatibility']
     elif args.driver:
         base += ['--rendering-driver', args.driver]
-    script = {'validate': 'validate.gd', 'interop': 'interop.gd', 'sample4': 'sample4.gd', 'benchmark': 'benchmark.gd'}[args.task]
+    script = {'validate': 'validate.gd', 'interop': 'interop.gd', 'sample4': 'sample4.gd', 'benchmark': 'benchmark.gd', 'api': 'api.gd', 'containers': 'containers.gd', 'experience': 'experience.gd'}[args.task]
     command = base+['--script', script, '--']
     if args.task == 'benchmark':
         command.insert(len(base), '--disable-render-loop')
@@ -143,12 +165,27 @@ renderer/rendering_method="mobile"
     else:
         timeout = 120
     marker = {
+        'experience': 'EXPERIENCE PASS ',
+        'containers': 'CONTAINERS PASS ',
+        'api': 'API PASS ',
         'validate': 'VALIDATION PASS ',
         'interop': 'CSHARP_INTEROP PASS ',
         'sample4': 'SAMPLE4 PASS ',
         'benchmark': 'BENCHMARK ' + args.backend + ' ',
     }[args.task]
-    run(command, stage/'run.log', timeout=timeout, success_marker=marker)
+    if args.task == 'api':
+        server = ThreadingHTTPServer(('127.0.0.1', 0), NavigationFixture)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        command += ['--redirect-url=http://127.0.0.1:' + str(server.server_port) + '/redirect']
+        try:
+            run(command, stage/'run.log', timeout=timeout, success_marker=marker)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+    else:
+        run(command, stage/'run.log', timeout=timeout, success_marker=marker)
     print(f'PASS; logs and project: {stage}')
 
 

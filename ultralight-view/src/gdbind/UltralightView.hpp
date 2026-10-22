@@ -1,9 +1,12 @@
 #pragma once
-#include <memory>
+#include "gdbind/Input.hpp"
+#include "gdbind/api/UltralightAPI.hpp"
 #include <chrono>
-#include <limits>
+#include <godot_cpp/classes/json.hpp>
 #include <godot_cpp/classes/texture2d.hpp>
 #include <godot_cpp/variant/vector4.hpp>
+#include <limits>
+#include <memory>
 
 #include <Ultralight/Ultralight.h>
 #include <godot_cpp/classes/file_access.hpp>
@@ -22,9 +25,8 @@
 #include <godot_cpp/core/memory.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
-
-#include "gdbind/PackedByteArraySurface.hpp"
 #include "gdbind/CPUSurfaceShader.hpp"
+#include "gdbind/PackedByteArraySurface.hpp"
 #include "gdbind/UltralightSingleton.hpp"
 #include "gdbind/debug.hpp"
 #include "gdbind/detail/JavaScriptBridge.hpp"
@@ -45,14 +47,16 @@ class UltralightView : public TextureRect {
         RenderingServer::get_singleton()->connect("frame_post_draw", Callable(this, "on_update_frame"));
         set_material(gdbind::CPUSurfaceShader::getMaterial());
         set_expand_mode(ExpandMode::EXPAND_IGNORE_SIZE);
+        set_focus_mode(FOCUS_ALL);
+        connect("focus_entered", Callable(this, "_sync_focus"));
+        connect("focus_exited", Callable(this, "_sync_focus"));
+        set_process(true);
     }
 
     virtual ~UltralightView() override = default;
 
-    /// @brief Render this view to their godot texture
-    ///
-    /// You should call this once per frame (usually in synchrony with the monitor's refresh rate).
-    /// Must call after render.updateFrame()
+    // Publish the SDK's completed frame through the Control texture. Rendering
+    // itself is driven by the singleton; frame_post_draw invokes this automatically.
     void updateFrame() {
         if (view.get() == nullptr)
             return;
@@ -67,9 +71,12 @@ class UltralightView : public TextureRect {
             auto target = view->render_target();
             auto display = driver.display_texture(target.texture_id);
             if (display.is_valid()) {
-                if (texture != display) { texture = display; set_texture(texture); }
+                if (texture != display) {
+                    texture = display;
+                    set_texture(texture);
+                }
                 const auto &uv = target.uv_coords;
-                gpu_material->set_shader_parameter("uv_rect", Vector4(uv.left,uv.top,uv.right,uv.bottom));
+                gpu_material->set_shader_parameter("uv_rect", Vector4(uv.left, uv.top, uv.right, uv.bottom));
             }
             return;
         }
@@ -86,6 +93,8 @@ class UltralightView : public TextureRect {
             // its base classes and releases the GDExtension instance.
             disconnect("resized", Callable(this, "on_resized"));
             RenderingServer::get_singleton()->disconnect("frame_post_draw", Callable(this, "on_update_frame"));
+            closed = true;
+            forgetAPIs();
             resetView();
         }
         if (p_what == NOTIFICATION_EDITOR_PRE_SAVE) {
@@ -108,34 +117,57 @@ class UltralightView : public TextureRect {
     double cpu_upload_us = 0;
     std::shared_ptr<UltralightRenderer::Listeners> listeners;
     std::shared_ptr<BridgeContext> bridge;
-    void resetView() {
+    RefPtr<View> inspector_view;
+    std::shared_ptr<UltralightRenderer::Listeners> inspector_listeners;
+    void resetView(bool preserve_operations = false) {
+        if (!preserve_operations)
+            loading = document_ready = load_finished = false;
+        auto pending = preserve_operations ? std::vector<PendingOperation>() : std::exchange(operations, {});
+        auto previous = std::exchange(view, nullptr);
+        auto previous_bridge = std::exchange(bridge, {});
+        auto previous_listeners = std::move(listeners);
+        if (previous.get()) {
+            previous->set_load_listener(nullptr);
+            previous->set_view_listener(nullptr);
+            previous->set_network_listener(nullptr);
+            previous->set_download_listener(nullptr);
+        }
         set_texture(nullptr);
         set_material(nullptr);
         gpu_material.unref();
-        texture.unref(); image.unref();
-        if (bridge) { bridge->invalidate(); bridge.reset(); }
-        if (view.get()) {
-            view->set_load_listener(nullptr);
-            view->set_view_listener(nullptr);
-            view->set_network_listener(nullptr);
-            view->set_download_listener(nullptr);
-            view = nullptr;
-        }
-        listeners.reset();
+        texture.unref();
+        image.unref();
+        inspector_view = nullptr;
+        inspector_listeners.reset();
         using_accelerated = false;
+        auto code = closed ? "Closed" : "PageGone";
+        if (previous_bridge)
+            previous_bridge->invalidate();
+        for (auto &item : pending)
+            item.task->reject(code, "View closed or recreated");
     }
-    void setAccelerated(bool enabled) { accelerated = enabled; force_cpu = false; }
-    bool getAccelerated() const { return accelerated; }
-    bool isAccelerated() const { return view.get() != nullptr && using_accelerated; }
+    void setAccelerated(bool enabled) {
+        accelerated = enabled;
+        force_cpu = false;
+    }
+    bool getAccelerated() const {
+        return accelerated;
+    }
+    bool isAccelerated() const {
+        return view.get() != nullptr && using_accelerated;
+    }
     void setMaxRenderFps(int64_t fps) {
         if (fps < 0 || uint64_t(fps) > std::numeric_limits<uint32_t>::max()) {
             UtilityFunctions::push_error("Ultralight max_render_fps must be a nonnegative 32-bit integer.");
             return;
         }
         max_render_fps = uint32_t(fps);
-        if (view.get()) view->set_max_render_fps(max_render_fps);
+        if (view.get())
+            view->set_max_render_fps(max_render_fps);
     }
-    int64_t getMaxRenderFps() const { return max_render_fps; }
+    int64_t getMaxRenderFps() const {
+        return max_render_fps;
+    }
     Dictionary getRenderStatistics() const {
         Dictionary result;
         const bool gpu_active = isAccelerated();
@@ -174,15 +206,25 @@ class UltralightView : public TextureRect {
         }
         cpu_upload_bytes += image->get_data().size();
         ++cpu_mipmap_count;
-        cpu_upload_us = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now()-start).count();
+        cpu_upload_us = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - start).count();
     }
 
     void initView() {
         if (view.get() != nullptr) {
             UtilityFunctions::push_warning("view is already created, will destroy previous view.");
         }
-        resetView();
+        auto id = ObjectID(get_instance_id());
+        auto generation = navigation_id;
+        resetView(!view.get());
+        if (ObjectDB::get_instance(id) != this || closed || generation != navigation_id || view.get())
+            return;
         auto size = get_size();
+        if (navigation_id == 0) {
+            inline_source = source_type == 1;
+            html = initial_html;
+            htmlUrl = initial_url;
+            html_base_url = initial_base_url;
+        }
         ViewConfig cfg;
         cfg.max_render_fps = max_render_fps;
         using_accelerated = accelerated && !force_cpu && GodotGPUDriver::instance().initialize();
@@ -201,27 +243,121 @@ class UltralightView : public TextureRect {
             auto result = UltralightSingleton::get_singleton()->createView(size.width, size.height, cfg, nullptr);
             view = result.view;
             listeners = result.listeners;
-            result.listeners->load.onBeginLoading = [this](ultralight::View *, uint64_t, bool main, const ultralight::String &) {
-                if (main && bridge) { bridge->invalidate(); bridge.reset(); }
+            result.listeners->load.onBeginLoading = [this](ultralight::View *, uint64_t frame, bool main,
+                                                           const ultralight::String &url) {
+                if (!main)
+                    return;
+                if (host_navigation)
+                    host_navigation = false;
+                else if (!beginNavigation())
+                    return;
+                auto event = frameEvent(frame, main, url);
+                current_url = event->url;
+                emit_signal("load_started", event);
             };
-            result.listeners->load.onWindowObjectReady = [this](ultralight::View *caller, uint64_t frame_id,
-                                                              bool is_main_frame, const ultralight::String &url) {
-                if (!is_main_frame) return;
-                {
-                    if (bridge) bridge->invalidate();
-                    auto lock = caller->LockJSContext();
-                    bridge = BridgeContext::create(lock->ctx(), caller);
-                    bindObject("__godot_view_instance", this);
+            result.listeners->load.onWindowObjectReady = [this](ultralight::View *caller, uint64_t frame, bool main,
+                                                                const ultralight::String &url) {
+                if (!main)
+                    return;
+                auto id = ObjectID(get_instance_id());
+                auto generation = navigation_id;
+                auto old_bridge = std::exchange(bridge, {});
+                if (old_bridge)
+                    old_bridge->invalidate();
+                if (ObjectDB::get_instance(id) != this || closed || generation != navigation_id)
+                    return;
+                auto lock = caller->LockJSContext();
+                bridge = BridgeContext::create(lock->ctx(), caller);
+                try {
+                    installAPIs();
                 }
-                emit_signal("on_window_object_ready");
+                catch (const std::exception &e) {
+                    UtilityFunctions::push_error(String::utf8(e.what()));
+                }
+                auto event = frameEvent(frame, main, url);
+                emit_signal("window_ready", event);
+                if (ObjectDB::get_instance(id) == this && generation == navigation_id)
+                    emit_signal("on_window_object_ready");
             };
-            result.listeners->load.onDOMReady = [this](ultralight::View *caller, uint64_t frame_id, bool is_main_frame,
-                                                     const ultralight::String &url) { emit_signal("on_dom_ready"); };
+            result.listeners->load.onDOMReady = [this](ultralight::View *, uint64_t frame, bool main,
+                                                       const ultralight::String &url) {
+                auto event = frameEvent(frame, main, url);
+                auto id = ObjectID(get_instance_id());
+                auto generation = navigation_id;
+                if (main) {
+                    document_ready = true;
+                    emit_signal("dom_ready", event);
+                }
+                if (ObjectDB::get_instance(id) != this || generation != navigation_id)
+                    return;
+                emit_signal("frame_dom_ready", event);
+                if (ObjectDB::get_instance(id) == this && generation == navigation_id && main)
+                    emit_signal("on_dom_ready");
+            };
+            result.listeners->load.onFinishLoading = [this](ultralight::View *, uint64_t frame, bool main,
+                                                            const ultralight::String &url) {
+                if (!main)
+                    return;
+                loading = false;
+                load_finished = true;
+                auto event = frameEvent(frame, main, url);
+                current_url = event->url;
+                emit_signal("load_finished", event);
+            };
+            result.listeners->load.onFailLoading =
+                [this](ultralight::View *, uint64_t frame, bool main, const ultralight::String &url,
+                       const ultralight::String &description, const ultralight::String &domain, int code) {
+                    if (!main)
+                        return;
+                    loading = false;
+                    document_ready = false;
+                    last_load_error = UltralightError::make("LoadFailed", String::utf8(description.utf8().data()));
+                    Dictionary failure;
+                    failure["event"] = frameEvent(frame, main, url);
+                    failure["error"] = last_load_error;
+                    failure["domain"] = String::utf8(domain.utf8().data());
+                    failure["code"] = code;
+                    emit_signal("load_failed", failure);
+                };
+            result.listeners->view.onInspector = [this]() -> RefPtr<View> {
+                ViewConfig config;
+                config.is_accelerated = false;
+                auto size = get_size();
+                auto created =
+                    UltralightSingleton::get_singleton()->createView(MAX(1, size.x), MAX(1, size.y), config, nullptr);
+                inspector_view = created.view;
+                inspector_listeners = created.listeners;
+                return inspector_view;
+            };
+            result.listeners->view.onCursor = [this](ultralight::Cursor cursor) {
+                set_default_cursor_shape(cursorShape(cursor));
+            };
+            result.listeners->view.onConsole = [this](const ultralight::ConsoleMessage &message) {
+                Dictionary data;
+                data["message"] = String::utf8(message.message().utf8().data());
+                data["level"] = int(message.level());
+                data["source_url"] = String::utf8(message.source_id().utf8().data());
+                data["line"] = int64_t(message.line_number());
+                data["column"] = int64_t(message.column_number());
+                data["navigation_id"] = int64_t(navigation_id);
+                emit_signal("console_message", data);
+            };
             // Register bindings before loading: page scripts may use globals immediately.
-            if (!html.is_empty()) {
+            if (inline_source || !htmlUrl.is_empty()) {
+                if (!host_navigation) {
+                    ++navigation_id;
+                    loading = true;
+                    document_ready = false;
+                    load_finished = false;
+                    last_load_error.unref();
+                }
+                host_navigation = true;
+            }
+            if (inline_source) {
                 auto utf32 = html.utf32();
                 ultralight::String32 content(utf32.get_data(), utf32.length());
-                view->LoadHTML(content);
+                auto base = html_base_url.utf32();
+                view->LoadHTML(content, ultralight::String32(base.get_data(), base.length()));
             } else if (!htmlUrl.is_empty()) {
                 auto utf32 = htmlUrl.utf32();
                 ultralight::String32 url(utf32.get_data(), utf32.length());
@@ -238,6 +374,9 @@ class UltralightView : public TextureRect {
         if (view.get() == nullptr)
             return;
         if (auto mouse_button = dynamic_cast<InputEventMouseButton *>(p_event.ptr()); mouse_button != nullptr) {
+            if (mouse_button->is_pressed())
+                grab_focus();
+            syncFocus();
             fireMouseEvent(mouse_button->get_position(), mouse_button->get_button_index(), mouse_button->is_pressed());
             accept_event();
         } else if (auto mouse_motion = dynamic_cast<InputEventMouseMotion *>(p_event.ptr()); mouse_motion != nullptr) {
@@ -294,7 +433,7 @@ class UltralightView : public TextureRect {
     virtual void _ready() override {
         if (view.get() != nullptr)
             return;
-        if (!lazy)
+        if (!lazy && get_size().x > 0 && get_size().y > 0)
             initView();
     }
 #pragma endregion
@@ -303,7 +442,9 @@ class UltralightView : public TextureRect {
   public:
     virtual void onResized() {
         auto size = get_size();
-        set_texture(nullptr); texture.unref(); image.unref();
+        set_texture(nullptr);
+        texture.unref();
+        image.unref();
         if (view.get() != nullptr && size.width > 0 && size.height > 0) {
             view->Resize(size.width, size.height);
             // The next renderer frame updates the Surface or RenderTarget;
@@ -316,25 +457,44 @@ class UltralightView : public TextureRect {
   protected:
     std::shared_ptr<BridgeContext> currentBridge(JSContextRef context) {
         if (!bridge || !bridge->matches(context)) {
-            if (bridge) bridge->invalidate();
+            if (bridge)
+                bridge->invalidate();
             bridge = BridgeContext::create(context, view.get());
         }
         return bridge;
     }
     void bindFunc(godot::String funcName, Callable callback) {
-        if (!view.get()) return;
-        try { auto lock = view->LockJSContext(); currentBridge(lock->ctx())->bind(funcName, callback); }
-        catch (const std::exception &error) { UtilityFunctions::push_error(error.what()); }
+        if (!view.get())
+            return;
+        try {
+            auto lock = view->LockJSContext();
+            currentBridge(lock->ctx())->bind(funcName, callback);
+        }
+        catch (const std::exception &error) {
+            UtilityFunctions::push_error(error.what());
+        }
     }
     void bindObject(godot::String propertyName, godot::Object *instance, bool query_members = false) {
-        if (!view.get()) return;
-        try { auto lock = view->LockJSContext(); currentBridge(lock->ctx())->bindObject(propertyName, instance, query_members); }
-        catch (const std::exception &error) { UtilityFunctions::push_error(error.what()); }
+        if (!view.get())
+            return;
+        try {
+            auto lock = view->LockJSContext();
+            currentBridge(lock->ctx())->bindObject(propertyName, instance, query_members);
+        }
+        catch (const std::exception &error) {
+            UtilityFunctions::push_error(error.what());
+        }
     }
     godot::Variant executeScript(godot::String script) {
-        if (!view.get()) return Variant();
-        try { auto lock = view->LockJSContext(); return currentBridge(lock->ctx())->evaluate(script); }
-        catch (const std::exception &error) { UtilityFunctions::push_error(error.what()); }
+        if (!view.get())
+            return Variant();
+        try {
+            auto lock = view->LockJSContext();
+            return currentBridge(lock->ctx())->evaluate(script);
+        }
+        catch (const std::exception &error) {
+            UtilityFunctions::push_error(error.what());
+        }
         return Variant();
     }
 
@@ -353,13 +513,14 @@ class UltralightView : public TextureRect {
 
     /// @brief html content to load
     godot::String html;
-    void setHtmlContent(godot::String html) {
-        this->html = html;
-        if (view.get() == nullptr)
-            return;
-        auto utf32 = html.utf32();
-        ultralight::String32 content(utf32.get_data(), utf32.length());
-        view->LoadHTML(content);
+    void setHtmlContent(godot::String content) {
+        source_type = 1;
+        initial_html = content;
+        inline_source = true;
+        html = content;
+        htmlUrl = "";
+        if (view.get())
+            load_html(content, html_base_url);
     }
     auto getHtmlContent() {
         return html;
@@ -367,21 +528,22 @@ class UltralightView : public TextureRect {
 
     /// @brief html url to load
     godot::String htmlUrl;
-    void setHtmlUrl(godot::String htmlUrl) {
-        this->htmlUrl = htmlUrl;
-        if (view.get() == nullptr)
-            return;
-        if (htmlUrl.is_empty())
-            return;
-        auto utf32 = htmlUrl.utf32();
-        ultralight::String32 url(utf32.get_data(), utf32.length());
-        view->LoadURL(url);
+    void setHtmlUrl(godot::String url) {
+        source_type = 0;
+        initial_url = url;
+        inline_source = false;
+        htmlUrl = url;
+        html = "";
+        if (view.get() && !url.is_empty())
+            load_url(url);
     }
     auto getHtmlUrl() {
         return htmlUrl;
     }
 
 #pragma endregion
+
+#include "gdbind/api/ViewMethods.inc"
 
     static void _bind_methods() {
         ClassDB::bind_method(D_METHOD("set_accelerated", "enabled"), &UltralightView::setAccelerated);
@@ -391,7 +553,62 @@ class UltralightView : public TextureRect {
         ClassDB::bind_method(D_METHOD("get_render_statistics"), &UltralightView::getRenderStatistics);
         ClassDB::bind_method(D_METHOD("set_max_render_fps", "fps"), &UltralightView::setMaxRenderFps);
         ClassDB::bind_method(D_METHOD("get_max_render_fps"), &UltralightView::getMaxRenderFps);
-        ADD_PROPERTY(PropertyInfo(Variant::INT, "max_render_fps", PROPERTY_HINT_RANGE, "0,1000,1,or_greater"), "set_max_render_fps", "get_max_render_fps");
+        ADD_PROPERTY(PropertyInfo(Variant::INT, "max_render_fps", PROPERTY_HINT_RANGE, "0,1000,1,or_greater"),
+                     "set_max_render_fps", "get_max_render_fps");
+        ClassDB::bind_method(D_METHOD("get_bridge_statistics"), &UltralightView::get_bridge_statistics);
+        ClassDB::bind_method(D_METHOD("unbind", "name"), &UltralightView::unbind);
+        ClassDB::bind_method(D_METHOD("load_url", "url", "timeout"), &UltralightView::load_url, DEFVAL(30.0));
+        ClassDB::bind_method(D_METHOD("load_html", "html", "base_url", "timeout"), &UltralightView::load_html,
+                             DEFVAL(String()), DEFVAL(30.0));
+        ClassDB::bind_method(D_METHOD("reload", "timeout"), &UltralightView::reload, DEFVAL(30.0));
+        ClassDB::bind_method(D_METHOD("wait_ready", "timeout"), &UltralightView::wait_ready, DEFVAL(30.0));
+        ClassDB::bind_method(D_METHOD("wait_for_selector", "selector", "timeout"), &UltralightView::wait_for_selector,
+                             DEFVAL(30.0));
+        ClassDB::bind_method(D_METHOD("evaluate", "source"), &UltralightView::evaluate);
+        ClassDB::bind_method(D_METHOD("evaluate_copy", "source"), &UltralightView::evaluate_copy);
+        ClassDB::bind_method(D_METHOD("evaluate_handle", "source"), &UltralightView::evaluate_handle);
+        ClassDB::bind_method(D_METHOD("evaluate_async", "source", "timeout"), &UltralightView::evaluate_async,
+                             DEFVAL(30.0));
+        ClassDB::bind_method(D_METHOD("is_closed"), &UltralightView::is_closed);
+        ClassDB::bind_method(D_METHOD("close"), &UltralightView::close);
+        ClassDB::bind_method(D_METHOD("is_initialized"), &UltralightView::is_initialized);
+        ClassDB::bind_method(D_METHOD("is_loading"), &UltralightView::is_loading);
+        ClassDB::bind_method(D_METHOD("is_document_ready"), &UltralightView::is_document_ready);
+        ClassDB::bind_method(D_METHOD("get_navigation_id"), &UltralightView::get_navigation_id);
+        ClassDB::bind_method(D_METHOD("get_current_url"), &UltralightView::get_current_url);
+        ClassDB::bind_method(D_METHOD("get_last_load_error"), &UltralightView::get_last_load_error);
+        ClassDB::bind_method(D_METHOD("_attach_api", "api"), &UltralightView::_attach_api);
+        ClassDB::bind_method(D_METHOD("_refresh_api", "api", "name"), &UltralightView::_refresh_api);
+        ClassDB::bind_method(D_METHOD("_detach_api", "api"), &UltralightView::_detach_api);
+        ClassDB::bind_method(D_METHOD("input_text", "text"), &UltralightView::input_text);
+        ClassDB::bind_method(D_METHOD("scroll_pixels", "delta"), &UltralightView::scroll_pixels);
+        ClassDB::bind_method(D_METHOD("_sync_focus"), &UltralightView::syncFocus);
+        for (auto name : {"load_started", "window_ready", "dom_ready", "frame_dom_ready", "load_finished"})
+            ADD_SIGNAL(MethodInfo(
+                name, PropertyInfo(Variant::OBJECT, "event", PROPERTY_HINT_RESOURCE_TYPE, "UltralightFrameEvent")));
+        ADD_SIGNAL(MethodInfo("load_failed", PropertyInfo(Variant::DICTIONARY, "failure")));
+        ADD_SIGNAL(MethodInfo("console_message", PropertyInfo(Variant::DICTIONARY, "message")));
+        ClassDB::bind_method(D_METHOD("set_source_type", "value"), &UltralightView::set_source_type);
+        ClassDB::bind_method(D_METHOD("get_source_type"), &UltralightView::get_source_type);
+        ADD_PROPERTY(PropertyInfo(Variant::INT, "source_type", PROPERTY_HINT_ENUM, "URL,Inline HTML"),
+                     "set_source_type", "get_source_type");
+#define UL_INITIAL_SOURCE(name)                                                                                        \
+    ClassDB::bind_method(D_METHOD("set_" #name, "value"), &UltralightView::set_##name);                                \
+    ClassDB::bind_method(D_METHOD("get_" #name), &UltralightView::get_##name);                                         \
+    ADD_PROPERTY(PropertyInfo(Variant::STRING, #name), "set_" #name, "get_" #name)
+        UL_INITIAL_SOURCE(initial_url);
+        UL_INITIAL_SOURCE(initial_html);
+        UL_INITIAL_SOURCE(initial_base_url);
+#undef UL_INITIAL_SOURCE
+        ADD_PROPERTY(PropertyInfo(Variant::BOOL, "document_ready", PROPERTY_HINT_NONE, "",
+                                  PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY),
+                     "", "is_document_ready");
+        ADD_PROPERTY(PropertyInfo(Variant::INT, "navigation_id", PROPERTY_HINT_NONE, "",
+                                  PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY),
+                     "", "get_navigation_id");
+        ADD_PROPERTY(PropertyInfo(Variant::STRING, "current_url", PROPERTY_HINT_NONE, "",
+                                  PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY),
+                     "", "get_current_url");
         // ultralight region function
         ClassDB::bind_method(D_METHOD("set_html_content", "html"), &UltralightView::setHtmlContent);
         ClassDB::bind_method(D_METHOD("get_html_content"), &UltralightView::getHtmlContent);
@@ -409,9 +626,14 @@ class UltralightView : public TextureRect {
         ClassDB::bind_method(D_METHOD("get_lazy"), &UltralightView::getLazy);
         ADD_PROPERTY(PropertyInfo(Variant::BOOL, "lazy"), "set_lazy", "get_lazy");
 
+        ClassDB::bind_method(D_METHOD("rebuild"), &UltralightView::initView);
         ClassDB::bind_method(D_METHOD("init_view"), &UltralightView::initView);
         ClassDB::bind_method(D_METHOD("bind_func", "funcName", "callback"), &UltralightView::bindFunc);
-        ClassDB::bind_method(D_METHOD("bind_object", "propertyName", "instance", "query_members"),
+        ClassDB::bind_method(D_METHOD("bind_object", "name", "object", "options"), &UltralightView::bind_object,
+                             DEFVAL(Ref<UltralightBindingOptions>()));
+        ClassDB::bind_method(D_METHOD("bind_function", "name", "function", "options"), &UltralightView::bind_function,
+                             DEFVAL(Ref<UltralightBindingOptions>()));
+        ClassDB::bind_method(D_METHOD("bind_object_legacy", "propertyName", "instance", "query_members"),
                              &UltralightView::bindObject, DEFVAL(false));
         ClassDB::bind_method(D_METHOD("execute_script", "script"), &UltralightView::executeScript);
 

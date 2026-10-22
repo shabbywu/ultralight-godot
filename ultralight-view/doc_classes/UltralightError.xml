@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='utf-8'?>
+<class name="UltralightError" inherits="RefCounted">
+    <brief_description>Structured script, conversion, loading or lifecycle error.</brief_description>
+    <description>Returned through UltralightResult.error. Source location and stack are populated when available. A valid JavaScript null result is successful and is separate from an error.</description>
+    <tutorials></tutorials>
+    <methods>
+        <method name="get_code" qualifiers="const">
+            <return type="String"></return>
+            <description>Return [member code].</description>
+        </method>
+        <method name="get_message" qualifiers="const">
+            <return type="String"></return>
+            <description>Return [member message].</description>
+        </method>
+        <method name="get_stack" qualifiers="const">
+            <return type="String"></return>
+            <description>Return [member stack].</description>
+        </method>
+        <method name="get_source_url" qualifiers="const">
+            <return type="String"></return>
+            <description>Return [member source_url].</description>
+        </method>
+        <method name="get_line" qualifiers="const">
+            <return type="int"></return>
+            <description>Return [member line].</description>
+        </method>
+        <method name="get_column" qualifiers="const">
+            <return type="int"></return>
+            <description>Return [member column].</description>
+        </method>
+    </methods>
+    <members>
+        <member name="code" type="String" setter="" getter="get_code">Stable error category, such as ScriptException, TraversalLimit, PageGone, Cancelled or Timeout.</member>
+        <member name="message" type="String" setter="" getter="get_message">Human-readable failure description.</member>
+        <member name="stack" type="String" setter="" getter="get_stack">JavaScript stack, when available.</member>
+        <member name="source_url" type="String" setter="" getter="get_source_url">Script source URL, when available.</member>
+        <member name="line" type="int" setter="" getter="get_line">Source line, or zero when unavailable.</member>
+        <member name="column" type="int" setter="" getter="get_column">Source column, or zero when unavailable.</member>
+    </members>
+    <signals></signals>
+    <constants></constants>
+</class>

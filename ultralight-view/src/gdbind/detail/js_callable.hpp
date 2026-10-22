@@ -5,14 +5,15 @@
 
 namespace gdbind {
 // Convert JavaScript functions to Godot Callables using the C# compatible
-// trampoline, reusing the same wrapper for each function in this document.
-inline godot::Variant BridgeContext::readFunction(JSObjectRef object) {
-    auto found = functions.find(object);
+// trampoline. Identity is stable within each document and conversion mode.
+inline godot::Variant BridgeContext::readFunction(JSObjectRef object, bool shared) {
+    auto key = std::make_pair(object, shared);
+    auto found = functions.find(key);
     if (found == functions.end()) {
         godot::Ref<JavascrtipCallableTrampoline> trampoline;
         trampoline.instantiate();
-        trampoline->configure(weak_from_this(), runtime_->retain(object));
-        found = functions.emplace(object, trampoline).first;
+        trampoline->configure(weak_from_this(), runtime_->retain(object), shared);
+        found = functions.emplace(key, trampoline).first;
     }
     return godot::Callable(found->second.ptr(), "trampoline");
 }
