@@ -50,6 +50,7 @@ ultralight-godot 通过 GDExtension 将 [Ultralight](https://ultralig.ht/) 集�
    └── addons/
        └── ultralight-view/
            ├── ultralight-view.gdextension
+           ├── csharp/
            └── bin/
                ├── win64/
                ├── x11/
@@ -94,53 +95,46 @@ ultralight-godot 通过 GDExtension 将 [Ultralight](https://ultralig.ht/) 集�
 
 ## JavaScript 绑定
 
-通过默认兼容模式，将 Godot 对象暴露给 JavaScript：
+注册一次，刷新时自动恢复；namespace 由应用自行选择。
 
 ```gdscript
-view.bind_object("probe", probe)
+var api := UltralightAPI.create("game")
+
+func _ready():
+    api.register_function("save", save_game)
+    api.register_object("inventory", inventory)
+    api.attach($WebView)
+    var loading = $WebView.load_url("file:///ui/index.html")
+    if not loading.is_completed():
+        await loading.completed
+    var result = loading.get_result()
+    if not result.ok:
+        push_error(result.error.message)
 ```
 
-将第三个参数设为 `true`，为当前绑定启用成员查询：
-
-```gdscript
-view.bind_object("probe", probe, true)
-view.execute_script("Object.keys(probe)")
-view.execute_script("'label' in probe && Reflect.has(probe, 'echo')")
+```javascript
+await game.save();
+game.inventory.items.push(item);
 ```
 
-成员查询模式的行为如下：
+新 API 提供主文档／框架信号、显式 Result／Task、C# async/await 和双向共享容器。
+容器按需包装，修改会写回源数据；需要独立副本时使用 `evaluate_copy()` 或 `snapshot()`。
+`UltralightBindingOptions` 可限制根对象成员、嵌套写入及按值转换。
 
-- `Object.keys()` 枚举 Godot 属性元数据；方法可以查询，但不会出现在枚举结果中。
-- 排除分类、分组、子分组及内部条目。
-- 查询使用当前元数据，不读取属性值，也不调用 getter。缺失成员遵循 JavaScript 的常规查找规则。
-- Godot 对象释放后，其成员不再出现在查询和枚举结果中。
-- **C# 属性需要添加 `[Export]`。** 默认兼容模式仍可访问普通 public C# 属性。
+参阅[使用指南与迁移说明](docs/api-guide.md)，了解 API 契约及与早期版本的差异。
+历史 Release 的文档应以对应 tag 为准。
+C# 项目需要 Godot .NET 4.4.1／.NET 8 或兼容环境，并编译安装包内的 `csharp/*.cs`。
 
-查询选项只影响当前显式绑定的对象，回调返回的对象及嵌套容器中的对象仍使用兼容模式。
-每次加载新文档时都需要重新安装绑定，通常在 `on_window_object_ready` 中处理。
-文档被替换或 View 被销毁后，返回的 JavaScript Callable 和尚未完成的 Promise 会失效。
-
-### 类型转换与实现细节
-
-扩展使用 ulbind17 处理带检查的 JavaScript 操作、句柄持有、Promise 观察和遍历保护。
-Godot 负责 Variant 转换、Callable 桥接、信号、View 生命周期、输入和纹理上传。
-
-- JavaScript 对象转换为 `Dictionary` 时，包含原型上的可枚举属性。
-- `null` 和 `undefined` 转换为 Nil，数字转换为 double。
-- 容器转换会拒绝循环引用及超过 64 层的嵌套。
-- Godot String 转换会截断内嵌 NUL 字符，Dictionary 的键也受影响。
-  ulbind17 独立的 JSC 字符串工具可保留 NUL，但当前适配层不保留。
-
-资源文件系统使用 ulbind17 的嵌入式资源覆盖层，并以 Godot 文件系统作为后备。
-构建时会将三个核心 SDK 运行库（`Ultralight`、`UltralightCore`、`WebCore`）
-复制到扩展所在目录；mini-browser 还会附带 `AppCore`。
-从源码构建时，可设置 `COPY_ULTRALIGHT_BINARY=OFF` 关闭复制。
+添加 `UltralightInspector` 并设置 `target_view` 即可内嵌调试工具；[分屏场景](samples/inspector.tscn)可直接复用。
+文本剪贴板、CSS 光标和 Control 焦点由 Godot 接入，无需 AppCore。
+完整 IME 预编辑尚未提供。扩展运行库为 Ultralight、UltralightCore、WebCore；mini-browser 单独使用 AppCore。
 
 ## Showcase 与 API 文档
 
 [在线展示](https://shabbywu.github.io/ultralight-godot/zh-CN/)收录四个示例的运行录制，
 [API 文档](https://shabbywu.github.io/ultralight-godot/zh-CN/api/)包含插件类的属性、方法与信号。
 API 内容由 `ultralight-view/doc_classes/` 的 Godot XML 文档生成。
+中文正文和搜索摘要来自 `site/locales/api.zh-CN.json`，签名及默认参数与英文版共用 XML，构建时检查翻译是否齐全。
 
 本地预览：
 

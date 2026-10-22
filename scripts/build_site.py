@@ -7,6 +7,7 @@ import re
 import shutil
 import textwrap
 from dataclasses import dataclass
+from functools import cache
 from html import escape
 from pathlib import Path
 from urllib.parse import quote
@@ -50,10 +51,54 @@ class ApiClass:
 CLASSES = tuple(
     ApiClass(node.attrib["name"], node.attrib["inherits"], node)
     for node in (
-        ET.parse(ROOT / "ultralight-view/doc_classes" / name).getroot()
-        for name in ("UltralightView.xml", "UltralightSingleton.xml")
+        ET.parse(path).getroot()
+        for path in sorted((ROOT / "ultralight-view/doc_classes").glob("*.xml"))
     )
 )
+
+
+@cache
+def api_classes(locale: str) -> tuple[ApiClass, ...]:
+    """Translate prose while keeping names, signatures and defaults in the XML."""
+    if locale == "en":
+        return CLASSES
+    catalog = json.loads(
+        (SOURCE / "locales" / f"api.{locale}.json").read_text(encoding="utf-8")
+    )
+    if set(catalog) != {cls.name for cls in CLASSES}:
+        raise ValueError(f"API class translations differ for {locale}")
+    result = []
+    for cls in CLASSES:
+        node = ET.fromstring(ET.tostring(cls.node))
+        translated = catalog[cls.name]
+        for key in ("brief_description", "description"):
+            node.find(key).text = translated[key]
+        for key, selector in (
+            ("methods", "methods/method"),
+            ("members", "members/member"),
+            ("signals", "signals/signal"),
+        ):
+            members = node.findall(selector)
+            if set(translated[key]) != {member.attrib["name"] for member in members}:
+                raise ValueError(f"API translations differ: {locale}/{cls.name}/{key}")
+            for member in members:
+                target = member if key == "members" else member.find("description")
+                target.text = translated[key][member.attrib["name"]]
+        # Missing prose must fail the build instead of silently falling back
+        # to English when a new API is added.
+        for prose in [
+            node.find("brief_description"),
+            node.find("description"),
+            *node.findall("./members/member"),
+            *node.findall("./methods/method/description"),
+            *node.findall("./signals/signal/description"),
+        ]:
+            if not prose.text or not re.search(r"[\u4e00-\u9fff]", prose.text):
+                raise ValueError(
+                    f"Missing localized API description: {locale}/{cls.name}"
+                )
+        result.append(ApiClass(cls.name, cls.inherits, node))
+    return tuple(result)
 
 
 def e(value: object) -> str:
@@ -167,28 +212,32 @@ def connect_code() -> str:
     gdscript = """extends Control
 
 @onready var view = $UltralightView
+var api = UltralightAPI.create("game")
 
 func _ready():
-    view.on_window_object_ready.connect(func():
-        view.bind_func("greet", func(name: String):
-            return "Hello, " + name))
-    view.htmlUrl = "file:///ui/index.html"
-    await get_tree().process_frame
-    view.init_view()"""
+    api.register_function("greet", func(name: String):
+        return "Hello, " + name)
+    api.attach(view)
+    var loading = view.load_url("file:///ui/index.html")
+    if not loading.is_completed():
+        await loading.completed
+    if not loading.get_result().ok:
+        push_error(loading.get_result().error.message)"""
     csharp = """using Godot;
+using Ultralight;
 
 public partial class WebUI : Control
 {
+    private UltralightApi api;
     public override async void _Ready()
     {
-        var view = GetNode<Control>("UltralightView");
-        view.Connect("on_window_object_ready", Callable.From(() =>
-            view.Call("bind_func", "greet",
-                Callable.From((string name) => "Hello, " + name))));
-        view.Set("htmlUrl", "file:///ui/index.html");
-        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-        view.Call("init_view");
+        var view = UltralightViewClient.Wrap(GetNode<Control>("UltralightView"));
+        api = new UltralightApi("game");
+        api.Register("greet", Callable.From((string name) => "Hello, " + name));
+        api.Attach(view);
+        await view.LoadUrlAsync("file:///ui/index.html");
     }
+    public override void _ExitTree() => api?.Dispose();
 }"""
     return (
         '<div data-code-tabs><div class="code-tabs" role="tablist" hidden>'
@@ -223,10 +272,10 @@ def sample_card(
 </div></article>'''
 
 
-def search_index() -> list[dict[str, str]]:
+def search_index(classes: tuple[ApiClass, ...] = CLASSES) -> list[dict[str, str]]:
     """Index documented classes, methods, properties and signals for client search."""
     entries: list[dict[str, str]] = []
-    for cls in CLASSES:
+    for cls in classes:
         entries.append(
             {
                 "name": cls.name,
@@ -270,11 +319,11 @@ def sidebar(cls_name: str, t: dict[str, str]) -> str:
     return f'''<aside class="api-sidebar"><div class="api-search" hidden><label for="api-search">{e(t["nav_api"])}</label><input id="api-search" type="search" placeholder="{e(t["search"])}" autocomplete="off" aria-controls="search-results"><div id="search-results" class="search-results" role="region" aria-live="polite" hidden></div></div><details class="api-menu" open><summary>{e(t["classes"])}</summary><nav aria-label="{e(t["nav_api"])}">{links}</nav></details></aside>'''
 
 
-def api_overview(t: dict[str, str]) -> str:
+def api_overview(t: dict[str, str], classes: tuple[ApiClass, ...] = CLASSES) -> str:
     """Introduce the reference with lifecycle, interop and rendering guidance."""
     cards = "".join(
         f'<a class="api-class-card" href="{cls.name}.html"><span class="step">CLASS / {e(cls.inherits)}</span><h2>{cls.name} →</h2><p>{e(text(cls.node.find("brief_description")))}</p></a>'
-        for cls in CLASSES
+        for cls in classes
     )
     sections = "".join(
         f'<section class="api-guide" id="{key}"><h2>{e(t[key + "_title"])}</h2><p>{e(t[key + "_text"])}</p></section>'
@@ -283,7 +332,7 @@ def api_overview(t: dict[str, str]) -> str:
     return f"""<main class="shell api-layout" id="content">{sidebar("", t)}<article class="api-content"><p class="eyebrow">REFERENCE / GODOT GDEXTENSION</p><h1>{e(t["api_title"])}</h1><p class="lead">{e(t["api_description"])}</p><p class="api-note">{e(t["api_source_note"])}</p><div class="api-class-grid">{cards}</div>{sections}<p class="api-callout">{e(t["fps_text"])}</p></article></main>"""
 
 
-def signature(node: ET.Element, *, link: bool = False) -> str:
+def signature(node: ET.Element, *, link: bool = False, signal: bool = False) -> str:
     """Format a method signature with parameter defaults and linked types."""
     name = node.attrib["name"]
     arguments = []
@@ -302,7 +351,19 @@ def signature(node: ET.Element, *, link: bool = False) -> str:
         if "qualifiers" in node.attrib
         else ""
     )
-    return f"<code>{label}({', '.join(arguments)}) → {result}{qualifiers}</code>"
+    suffix = "" if signal else f" → {result}{qualifiers}"
+    return f"<code>{label}({', '.join(arguments)}){suffix}</code>"
+
+
+def property_accessors(node: ET.Element, t: dict[str, str]) -> str:
+    """Readonly members have no setter; never emit a link to an empty anchor."""
+    links = [
+        f'<a href="#method-{e(name)}"><code>{e(name)}()</code></a>'
+        for key in ("setter", "getter")
+        if (name := node.attrib.get(key))
+    ]
+    readonly = f" · {e(t['readonly'])}" if not node.attrib.get("setter") else ""
+    return f"{e(t['accessors'])}: {' / '.join(links)}{readonly}"
 
 
 def api_class(cls: ApiClass, t: dict[str, str]) -> str:
@@ -324,7 +385,7 @@ def api_class(cls: ApiClass, t: dict[str, str]) -> str:
     )
     summary += f'<section id="methods"><h2>{e(t["methods"])}</h2><ul class="method-summary">{method_summary}</ul></section>'
     property_details = "".join(
-        f'<section class="api-member" id="property-{e(node.attrib["name"])}"><h3><a href="#property-{e(node.attrib["name"])}">{e(node.attrib["name"])}</a><span class="member-kind">{e(node.attrib["type"])}</span></h3>{documentation(text(node), name)}<p class="accessors">{e(t["default"])}: <code>{e(node.attrib.get("default", "—"))}</code> · {e(t["accessors"])}: <a href="#method-{e(node.attrib["setter"])}"><code>{e(node.attrib["setter"])}()</code></a> / <a href="#method-{e(node.attrib["getter"])}"><code>{e(node.attrib["getter"])}()</code></a></p></section>'
+        f'<section class="api-member" id="property-{e(node.attrib["name"])}"><h3><a href="#property-{e(node.attrib["name"])}">{e(node.attrib["name"])}</a><span class="member-kind">{e(node.attrib["type"])}</span></h3>{documentation(text(node), name)}<p class="accessors">{e(t["default"])}: <code>{e(node.attrib.get("default", "—"))}</code> · {property_accessors(node, t)}</p></section>'
         for node in properties
     )
 
@@ -334,7 +395,7 @@ def api_class(cls: ApiClass, t: dict[str, str]) -> str:
 
     method_details = "".join(method_detail(node) for node in regular)
     signal_details = "".join(
-        f'<section class="api-member" id="signal-{e(node.attrib["name"])}"><h3><a href="#signal-{e(node.attrib["name"])}">{e(node.attrib["name"])}</a></h3>{documentation(text(node.find("description")), name)}</section>'
+        f'<section class="api-member" id="signal-{e(node.attrib["name"])}"><h3><a href="#signal-{e(node.attrib["name"])}">{e(node.attrib["name"])}</a></h3><div class="signature">{signature(node, signal=True)}</div>{documentation(text(node.find("description")), name)}</section>'
         for node in signals
     )
     if signals:
@@ -380,7 +441,7 @@ def write_page(
         for code, label in (("zh-CN", "中文"), ("en", "EN"))
     )
     search = (
-        f'<script type="application/json" id="api-index">{json_script(search_index())}</script>'
+        f'<script type="application/json" id="api-index">{json_script(search_index(api_classes(locale)))}</script>'
         if section.startswith("api/")
         else ""
     )
@@ -428,6 +489,7 @@ def build() -> None:
         raise ValueError("Locale keys differ")
     for locale in LOCALES:
         t = catalogs[locale]
+        classes = api_classes(locale)
         for entry in (False, True) if locale == "zh-CN" else (False,):
             prefix = "" if entry else "../"
             cards = "".join(
@@ -448,7 +510,7 @@ def build() -> None:
                 ),
                 CONNECT_CODE=connect_code(),
                 HTML_CODE=code_block(
-                    "<!doctype html>\n<html lang=\"en\">\n<body>\n  <button onclick=\"document.querySelector('p').textContent = greet('Godot')\">Say hello</button>\n  <p></p>\n</body>\n</html>",
+                    "<!doctype html>\n<html lang=\"en\">\n<body>\n  <button onclick=\"document.querySelector('p').textContent = game.greet('Godot')\">Say hello</button>\n  <p></p>\n</body>\n</html>",
                     "HTML",
                 ),
             )
@@ -467,10 +529,10 @@ def build() -> None:
             t,
             t["api_title"] + " · ultralight-godot",
             t["api_description"],
-            api_overview(t),
+            api_overview(t, classes),
             section="api/",
         )
-        for cls in CLASSES:
+        for cls in classes:
             write_page(
                 f"{locale}/api/{cls.name}.html",
                 locale,
