@@ -1,2 +1,7 @@
-src/addons
-src/default
+src/addons/
+src/.godot/
+src/ui/
+**/node_modules/
+**/bin/
+**/obj/
+*.import

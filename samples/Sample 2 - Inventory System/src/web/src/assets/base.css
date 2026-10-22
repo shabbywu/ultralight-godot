@@ -1,0 +1,4 @@
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; min-width: 1000px; min-height: 100%; }
+body { color: #dfcba4; background: #0c0806; font-family: 'Reliquary Grenze', Georgia, serif; line-height: 1.2; }
+button, kbd { font: inherit; }

@@ -1,0 +1,17 @@
+{
+  "name": "grid-inventory",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    "./core": "./src/core.ts",
+    "./dom": "./src/dom.ts"
+  },
+  "scripts": {
+    "test": "tsx --test tests/*.test.ts",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "tsx": "^4.19.0"
+  }
+}
