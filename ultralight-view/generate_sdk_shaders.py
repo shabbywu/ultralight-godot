@@ -24,8 +24,10 @@ def adapt(header, vertex=False):
     fields = match[1].replace("layout(row_major) ", "")
     replacement = ("struct DrawState {" + fields + "};\n"
                    "layout(set = 0, binding = 0, std430, row_major) readonly buffer DrawStates { DrawState draws[]; };\n"
-                   "layout(push_constant, std430) uniform DrawIndex { uint index; } draw_index;\n"
-                   "#define Uniforms draws[draw_index.index]\n")
+                   # Godot 4.3/4.4 round push-constant blocks to 16 bytes. Use
+                   # an explicit vector so older and newer RD versions agree.
+                   "layout(push_constant, std430) uniform DrawIndex { uvec4 index; } draw_index;\n"
+                   "#define Uniforms draws[draw_index.index.x]\n")
     source = source[:match.start()] + replacement + source[match.end():]
     bindings = sorted({int(x) for x in re.findall(r"layout\(binding = (\d+)\) uniform [ui]?sampler2D", source)})
     source = re.sub(r"layout\(binding = (\d+)\) uniform ([ui]?sampler2D)",

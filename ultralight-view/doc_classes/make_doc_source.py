@@ -1,3 +1,4 @@
+import re
 import sys
 import zlib
 from pathlib import Path
@@ -11,6 +12,8 @@ def make_doc_source(target: Path, source: Path):
         if not src.suffix == ".xml":
             continue
         content = src.read_text(encoding="utf-8")
+        # Godot's document loader expects closing tags for section containers.
+        content = re.sub(r"<(tutorials|methods|members|signals|constants)\s*/>", r"<\1></\1>", content)
         bufs.append(content)
 
     buf = (docbegin + "".join(bufs) + docend).encode("utf-8")
