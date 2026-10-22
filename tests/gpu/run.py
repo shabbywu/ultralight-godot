@@ -139,6 +139,11 @@ renderer/rendering_method="mobile"
         '[configuration]\nentry_symbol="ultralight_library_init"\ncompatibility_minimum="4.3"\n'
         f'[libraries]\n{os_name}.debug.{arch}="bin/{library.name}"\n{os_name}.release.{arch}="bin/{library.name}"\n',
         encoding='utf-8')
+    # Godot 4.3 must load extension classes before initializing GDScript globals.
+    cache = stage/'.godot'
+    cache.mkdir(exist_ok=True)
+    (cache/'extension_list.cfg').write_text(
+        'res://addons/ultralight-view/ultralight-view.gdextension\n', encoding='utf-8')
     base = [str(Path(godot).resolve())]
     base += ['--path', str(stage)]
     # Import the project font before ThemeDB tries to load it on startup.
