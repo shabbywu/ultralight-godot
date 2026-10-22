@@ -118,6 +118,10 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-24.04' }}
         run: python3 tests/gpu/run.py --godot /tmp/godot-sdk2/Godot_v4.3-stable_linux.x86_64 --library bin/x11/libultralight-view.linux.release.x86_64.so --backend headless --output build/godot-validation
 
+      - name: Validate lifecycle, registry and shared containers
+        if: ${{ matrix.os == 'ubuntu-24.04' }}
+        run: python3 tests/gpu/run.py --godot /tmp/godot-sdk2/Godot_v4.3-stable_linux.x86_64 --library bin/x11/libultralight-view.linux.release.x86_64.so --task api --backend headless --output build/godot-api-validation
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -134,12 +138,19 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout API helpers
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag && format('refs/tags/{0}', inputs.release_tag) || github.sha }}
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           path: artifacts/addons/ultralight-view/bin
           pattern: build-*
           merge-multiple: true
+      - name: Include C# API helpers
+        run: cp -R addons/ultralight-view/csharp artifacts/addons/ultralight-view/
+
       - name: generate ultralight-view.gdextension
         run: |
           cat > artifacts/addons/ultralight-view/ultralight-view.gdextension <<EOF
