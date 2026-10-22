@@ -1,49 +1,37 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<class name="UltralightSingleton" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
-    <brief_description>
-        A singleton object to control ultralight renderer.
-    </brief_description>
-    <description>
-        A singleton object to control ultralight renderer.
+<?xml version='1.0' encoding='utf-8'?>
+<class name="UltralightSingleton" inherits="Object">
+    <brief_description>Control the shared Ultralight renderer and remote inspector.</brief_description>
+    <description>The engine-registered singleton shared by all Ultralight views. Obtain it with [code]Engine.get_singleton("UltralightSingleton")[/code] in GDScript, or [code]Engine.Singleton.GetSingleton("UltralightSingleton")[/code] in C#.
 
-        You can get this UltralightSingleton by
-
-        [codeblocks]
-        Variant UltralightSingleton = Engine.Singleton.GetSingleton("UltralightSingleton");
-        [/codeblocks]
-    </description>
-    <tutorials>
-    </tutorials>
+Logic updates are connected to the SceneTree process frame, and rendering to RenderingServer frame_pre_draw. Most applications need no manual update calls.</description>
+    <tutorials />
     <methods>
         <method name="update_logic">
             <return type="void" />
-            <description>
-                Update timers and dispatch callbacks.
-
-                As default, UltralightSingleton will call update_logic automatelly when UltralightSingleton is processed by godot. If you want to control update_logic by your code, you can disable it by `UltralightSingleton.set_process(false)`.
-
-                If you disable default `_process`, you must call this as often as you can from your application's run loop.
-            </description>
+            <description>Update timers and dispatch callbacks. This runs automatically each SceneTree process frame. If automatic processing is disabled with [method set_process], call this regularly from the application loop.</description>
         </method>
         <method name="update_frame">
             <return type="void" />
-            <description>
-                [internal] DO NOT call this function manually, UltralightSingleton will automatelly register it to RenderingServer's `frame_pre_draw` signal.
-                Render all active views to their respective surfaces and render targets.
-            </description>
+            <description>Internal lifecycle callback. Render active views to CPU surfaces or GPU render targets. It is connected automatically to RenderingServer frame_pre_draw; applications should not invoke it manually.</description>
         </method>
         <method name="set_process">
             <return type="void" />
             <param index="0" name="process" type="bool" />
-            <description>
-                If set to true, enables processing per process_frame.
-            </description>
+            <description>Enable or disable automatic logic updates. This does not disconnect automatic rendering. When disabled, the application must call [method update_logic] to advance timers and callbacks.</description>
+        </method>
+        <method name="start_remove_inspector_server">
+            <return type="bool" />
+            <param index="0" name="address" type="String" />
+            <param index="1" name="port" type="int" />
+            <description>Start the Ultralight remote inspector server on [param address] and [param port]. Return whether the SDK successfully starts the server. Connect using the matching mini-browser package from the plugin release. Use a loopback address for local inspection.
+
+[codeblock]
+var renderer = Engine.get_singleton("UltralightSingleton")
+renderer.start_remove_inspector_server("127.0.0.1", 19999)
+[/codeblock]</description>
         </method>
     </methods>
-    <members>
-    </members>
-    <signals>
-    </signals>
-    <constants>
-    </constants>
+    <members />
+    <signals />
+    <constants />
 </class>

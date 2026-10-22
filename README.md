@@ -10,7 +10,7 @@ C#, and use transparent web interfaces in 2D and 3D scenes.
 
 ![HTML interface rendered in Godot](https://github.com/user-attachments/assets/6216a3bb-6f5d-4d63-9aa7-102b0001135b)
 
-[Install](#installation) · [Examples](#examples) · [JavaScript bindings](#javascript-bindings) · [Release automation](#release-automation)
+[Showcase](https://shabbywu.github.io/ultralight-godot/en/) · [API reference](https://shabbywu.github.io/ultralight-godot/en/api/) · [Install](#installation) · [Examples](#examples) · [JavaScript bindings](#javascript-bindings) · [Release automation](#release-automation)
 
 ## Features
 
@@ -149,6 +149,23 @@ filesystem as fallback. Runtime staging copies the three core SDK libraries
 (`Ultralight`, `UltralightCore`, and `WebCore`) beside the extension; mini-browser
 also includes `AppCore`. Set `COPY_ULTRALIGHT_BINARY=OFF` when building from source
 to disable copying.
+
+## Showcase and API reference
+
+The [showcase](https://shabbywu.github.io/ultralight-godot/en/) includes recordings
+of all four samples. The [API reference](https://shabbywu.github.io/ultralight-godot/en/api/)
+covers plugin properties, methods and signals, generated from the Godot XML docs
+in `ultralight-view/doc_classes/`.
+
+Preview locally:
+
+```sh
+python3 scripts/build_site.py
+python3 -m http.server 8000 --directory dist
+```
+
+The `Showcase Pages` workflow builds pull requests and deploys `main`.
+Set the repository's **Settings → Pages → Source** to **GitHub Actions**.
 
 ## Release automation
 

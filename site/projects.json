@@ -1,0 +1,122 @@
+[
+  {
+    "id": "callbacks",
+    "title": "HTML × C#",
+    "sample": "Sample 1 - Load Html And Bind CSharp Callback",
+    "kind": {
+      "zh-CN": "函数与对象绑定",
+      "en": "Functions & objects"
+    },
+    "description": {
+      "zh-CN": "从按钮悬停到 C# 回调。JavaScript 调用 Godot 方法并修改公开属性，原生标签立即反映变化。",
+      "en": "From button hover effects to C# callbacks. JavaScript calls Godot methods and updates a public property, reflected in a native label."
+    },
+    "features": {
+      "zh-CN": [
+        "HTML / CSS",
+        "Callable",
+        "C# 属性"
+      ],
+      "en": [
+        "HTML / CSS",
+        "Callable",
+        "C# properties"
+      ]
+    },
+    "animation": "sample-1.webp",
+    "poster": "assets/sample-1-poster.webp",
+    "api": "UltralightView.html#method-bind_func",
+    "width": 1080,
+    "height": 608
+  },
+  {
+    "id": "ashen-reliquary",
+    "title": "Ashen Reliquary",
+    "sample": "Sample 2 - Inventory System",
+    "kind": {
+      "zh-CN": "ARPG 装备与背包",
+      "en": "Equipment & inventory"
+    },
+    "description": {
+      "zh-CN": "穿戴装备、镶嵌宝石、拆分堆叠并绑定快捷栏。C# 后端拥有背包状态，Vue 界面在收到事件后更新展示副本。",
+      "en": "Equip relics, socket gems, split stacks and bind shortcuts. C# owns inventory state; the Vue interface refreshes detached copies after backend events."
+    },
+    "features": {
+      "zh-CN": [
+        "网格拖拽",
+        "后端事件",
+        "Vue"
+      ],
+      "en": [
+        "Grid inventory",
+        "Backend events",
+        "Vue"
+      ]
+    },
+    "animation": "sample-2.webp",
+    "poster": "assets/sample-2-poster.webp",
+    "api": "UltralightView.html#method-bind_object",
+    "width": 1080,
+    "height": 780
+  },
+  {
+    "id": "world-space",
+    "title": "Web in 3D",
+    "sample": "Sample 3 - 3D",
+    "kind": {
+      "zh-CN": "场景中的网页",
+      "en": "A page in the world"
+    },
+    "description": {
+      "zh-CN": "让可滚动的网页成为 3D 场景的一部分。SubViewport 将界面渲染到网格材质，物理物体与网页在同一个世界中呈现。",
+      "en": "Put a scrollable page into a 3D world. A SubViewport supplies the mesh texture while physics objects share the scene."
+    },
+    "features": {
+      "zh-CN": [
+        "SubViewport",
+        "3D 材质",
+        "鼠标交互"
+      ],
+      "en": [
+        "SubViewport",
+        "3D material",
+        "Mouse input"
+      ]
+    },
+    "animation": "sample-3.webp",
+    "poster": "assets/sample-3-poster.webp",
+    "api": "UltralightView.html#property-transparent",
+    "width": 1080,
+    "height": 608
+  },
+  {
+    "id": "render-lab",
+    "title": "Render Lab",
+    "sample": "Sample 4 - GPU",
+    "kind": {
+      "zh-CN": "GPU / CPU 渲染",
+      "en": "GPU / CPU rendering"
+    },
+    "description": {
+      "zh-CN": "在 SVG 与 Canvas 动画中切换 GPU 和 CPU 后端，查看实时画面、渲染统计与帧耗时曲线。",
+      "en": "Switch GPU and CPU backends with SVG and Canvas animation. Inspect live output, rendering statistics and the frame-time graph."
+    },
+    "features": {
+      "zh-CN": [
+        "RenderingDevice",
+        "Canvas / SVG",
+        "渲染统计"
+      ],
+      "en": [
+        "RenderingDevice",
+        "Canvas / SVG",
+        "Render statistics"
+      ]
+    },
+    "animation": "sample-4.webp",
+    "poster": "assets/sample-4-poster.webp",
+    "api": "UltralightView.html#method-get_render_statistics",
+    "width": 1080,
+    "height": 720
+  }
+]

@@ -67,3 +67,6 @@ build
 bin
 
 __pycache__
+
+# Generated GitHub Pages site
+/dist/

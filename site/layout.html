@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="{{LANG}}" data-entry="{{ENTRY}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="{{DESCRIPTION}}">
+  <meta property="og:title" content="{{TITLE}}">
+  <meta property="og:description" content="{{DESCRIPTION}}">
+  <meta property="og:type" content="website">
+  <title>{{TITLE}}</title>
+  <link rel="alternate" hreflang="zh-CN" href="{{ZH_URL}}">
+  <link rel="alternate" hreflang="en" href="{{EN_URL}}">
+  <link rel="icon" href="{{PREFIX}}assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="{{PREFIX}}assets/style.css">
+  <script src="{{PREFIX}}assets/app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#content">{{skip}}</a>
+<header class="bar shell">
+  <a class="brand" href="{{HOME}}" aria-label="ultralight-godot Showcase">
+    <span class="brand-icon" aria-hidden="true"><i></i><i></i></span>
+    <span><strong>ultralight-godot <span class="brand-edition">SHOWCASE</span></strong><small>shabbywu/ultralight-godot</small></span>
+  </a>
+  <nav class="main-nav" aria-label="ultralight-godot">
+    <a class="nav-link" href="{{HOME}}#projects">{{nav_examples}}</a>
+    <a class="nav-link api-nav" href="{{API}}">{{nav_api}}</a>
+    <a class="nav-link" href="{{HOME}}#start">{{nav_start}}</a>
+    <div class="language" role="group" aria-label="{{language}}">{{LOCALE_NAV}}</div>
+    <a class="github-nav" href="https://github.com/shabbywu/ultralight-godot">GitHub ↗</a>
+  </nav>
+</header>
+{{CONTENT}}
+<footer class="shell footer"><a href="{{HOME}}">ultralight-godot / Showcase</a><span>Godot. Web. Native.</span><a href="{{LICENSES}}">{{licenses}} ↗</a><span class="footer-note">{{footer_note}}</span></footer>
+<dialog class="lightbox" aria-labelledby="lightbox-title"><div class="lightbox-toolbar"><h2 id="lightbox-title"></h2><button type="button" class="lightbox-close">{{lightbox_close}} <span aria-hidden="true">×</span></button></div><img class="lightbox-image" alt=""><p>{{lightbox_note}} <a class="original-image" href="">{{open_image}} ↗</a></p></dialog>
+<script type="application/json" id="site-messages">{{MESSAGES}}</script>
+{{SEARCH_INDEX}}
+</body>
+</html>

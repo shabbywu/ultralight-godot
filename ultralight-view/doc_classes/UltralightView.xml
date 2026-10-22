@@ -1,147 +1,162 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<class name="UltralightView" inherits="TextureRect" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
-    <brief_description>
-        A TextureRect rendering Web-Content.
-    </brief_description>
-    <description>
-        A TextureRect in Godot, used to render ultralight view surface to Godot.
-    </description>
-    <tutorials>
-    </tutorials>
+<?xml version='1.0' encoding='utf-8'?>
+<class name="UltralightView" inherits="TextureRect">
+    <brief_description>Render HTML, CSS and JavaScript in a Godot TextureRect.</brief_description>
+    <description>An Ultralight web view displayed as a Godot texture. Mouse and keyboard input are forwarded from the Control to the page. The view supports CPU Surface rendering and optional GPU rendering through Godot RenderingDevice.
+
+Give the Control a nonzero size before initialization. For container-managed layouts, set [member lazy] in the scene, connect the page signals, wait for layout, then call [method init_view].
+
+Install JavaScript bindings in [signal on_window_object_ready] on every page load. Reloading or reinitializing the view replaces the document and invalidates its retained JavaScript Callables and pending Promises.</description>
+    <tutorials />
     <methods>
         <method name="is_accelerated" qualifiers="const">
             <return type="bool" />
-            <description>
-                Return whether the current View actually uses RenderingDevice. This can be false when [member accelerated] is true if the rendering device is unavailable or initialization failed.
-            </description>
+            <description>Return whether this view actually uses GPU RenderingDevice. A request through [member accelerated] can fall back to CPU if the device is unavailable or initialization fails.</description>
         </method>
         <method name="get_render_statistics" qualifiers="const">
             <return type="Dictionary" />
-            <description>
-                Return actual backend, SDK edition and edition frame-rate ceiling (sdk_edition, sdk_max_fps; 0 means no edition ceiling), requested per-View max_render_fps, Ultralight render time in microseconds, and this View's CPU upload counters. Only an active accelerated View adds GPU fields (gpu_available, bitmap_upload_bytes, geometry_upload_bytes, state_upload_bytes, draws, batches, feedback_copies, render_passes, rd_record_us, gpu_us). CPU, uninitialized and fallback Views omit those fields and do not query GPUDriver. GPU counters and Ultralight render timing cover all Views; CPU page upload counters cover this View and survive reinitialization. A zero GPU timing sample may mean timestamps are unavailable. Resource bitmap uploads can still occur in accelerated mode, including Canvas content.
-            </description>
+            <description>Return rendering statistics. These fields are always present:
+- [code]accelerated[/code]: actual rendering backend.
+- [code]sdk_edition[/code], [code]sdk_max_fps[/code]: SDK edition and its frame-rate ceiling; zero means no edition ceiling.
+- [code]max_render_fps[/code]: requested per-view frame-rate limit.
+- [code]ultralight_render_us[/code]: Ultralight rendering time in microseconds, shared across all views.
+- [code]cpu_page_upload_bytes[/code], [code]cpu_mipmap_count[/code], [code]cpu_upload_us[/code]: CPU Surface upload counters for this view. These survive reinitialization.
+
+Only an active accelerated view adds GPU fields: [code]gpu_available[/code], [code]bitmap_upload_bytes[/code], [code]geometry_upload_bytes[/code], [code]state_upload_bytes[/code], [code]draws[/code], [code]batches[/code], [code]feedback_copies[/code], [code]render_passes[/code], [code]rd_record_us[/code], [code]gpu_us[/code] and [code]gpu_draws_by_shader[/code]. GPU counters cover all views. Zero GPU timing can mean timestamps are unavailable. GPU mode can still upload SDK resource bitmaps, including Canvas content.
+
+CPU, uninitialized and fallback views omit GPU fields. Rendering preparation timings exclude JavaScript execution outside the render call and do not represent total application frame time.</description>
         </method>
         <method name="set_html_content">
             <return type="void" />
             <param index="0" name="html" type="String" />
-            <description>
-                Set Html Content to show. will reload the view immediately
-            </description>
+            <description>Set [member html] and load the inline HTML immediately if initialized.</description>
         </method>
         <method name="get_html_content">
             <return type="String" />
-            <description>
-                Get Html Content showing.
-            </description>
+            <description>Return the configured inline [member html].</description>
         </method>
         <method name="set_html_url">
             <return type="void" />
             <param index="0" name="htmlUrl" type="String" />
-            <description>
-                Set the html url source, for example "file:///page.html" for a project resource or "https://www.baidu.com".
-                If any exsits url is set, will reload the view immediately.
-            </description>
+            <description>Set [member htmlUrl]. A nonempty URL loads immediately if initialized; an empty URL does not navigate.</description>
         </method>
         <method name="get_html_url">
             <return type="String" />
-            <description>
-                Get current html url.
-            </description>
+            <description>Return the configured [member htmlUrl]. This is the source property, not a query of the current navigation URL.</description>
         </method>
         <method name="set_transparent">
             <return type="void" />
-            <param index="0" name="transparent" type="bool" />
-            <description>
-                Set whether or not this View should support transparency.
-                If view is already created, must call `initView` to reinit the view.
-            </description>
+            <param index="0" name="is_transparent" type="bool" />
+            <description>Set [member transparent]. Call [method init_view] to apply it to an existing view.</description>
         </method>
         <method name="get_transparent">
             <return type="bool" />
-            <description>
-                Get whether or not this View should support transparency.
-            </description>
+            <description>Return the configured [member transparent] value.</description>
+        </method>
+        <method name="set_lazy">
+            <return type="void" />
+            <param index="0" name="is_lazy" type="bool" />
+            <description>Set [member lazy]. Set it in the scene before the node becomes ready to defer automatic initialization.</description>
+        </method>
+        <method name="get_lazy">
+            <return type="bool" />
+            <description>Return the configured [member lazy] value.</description>
+        </method>
+        <method name="set_accelerated">
+            <return type="void" />
+            <param index="0" name="enabled" type="bool" />
+            <description>Set the requested [member accelerated] mode. Call [method init_view] to apply it to an existing view.</description>
+        </method>
+        <method name="get_accelerated">
+            <return type="bool" />
+            <description>Return the requested [member accelerated] mode. Use [method is_accelerated] for the active backend.</description>
+        </method>
+        <method name="set_max_render_fps">
+            <return type="void" />
+            <param index="0" name="fps" type="int" />
+            <description>Set [member max_render_fps]. This applies immediately and survives view reinitialization.</description>
+        </method>
+        <method name="get_max_render_fps">
+            <return type="int" />
+            <description>Return the configured [member max_render_fps].</description>
         </method>
         <method name="init_view">
             <return type="void" />
-            <description>
-                init the ultralight view.
-            </description>
+            <description>Create or recreate the Ultralight view using the Control size and current configuration. Width and height must both be greater than zero. Resizing an already initialized Control resizes the page automatically.
+
+Reinitialization destroys the previous document, bindings and JavaScript state. A nonempty [member html] takes precedence over [member htmlUrl] during initialization. Connect [signal on_window_object_ready] before calling this method.</description>
         </method>
         <method name="bind_func">
             <return type="void" />
             <param index="0" name="funcName" type="String" />
-            <param index="0" name="callback" type="Callable" />
-            <description>
-                Bind [i]Callble[/i] to javascript global object(aka, window).
-                After [b]bind_func[/b], you can access the func via below javascript.
+            <param index="1" name="callback" type="Callable" />
+            <description>Expose [param callback] as a JavaScript function named [param funcName] on [code]window[/code]. Bind it in [signal on_window_object_ready] for each document.
 
-                [codeblocks]
-                [b]window.${funcName}[/b](...)
-                // window is optional
-                [b]${funcName}[/b](...)
-                [/codeblocks]
+Arguments and return values are converted through Godot Variant:
+- JavaScript [code]undefined[/code] and [code]null[/code] map to Nil.
+- Booleans, strings and numbers map to [bool], [String] and [float]. JavaScript numbers are doubles.
+- Arrays and enumerable object properties map recursively to [Array] and [Dictionary].
+- JavaScript functions map to [Callable]. Their lifetime is tied to the document.
 
-                Those function params will be convert to [i]Variant[/i], The type conversion table is as follows
-                - Undefined, NULL => [i]Nil[/i]
-                - Boolean => [i]bool[/i]
-                - Number => [i]double[/i]
-                - String => [i]String[/i]
-                - Array => [i]Array[/i]
-                - Object => [i]Dictionary[/i]
-                - Funciton => [i]Callable[/i]
-            </description>
+Godot arrays and dictionaries returned to JavaScript become new JavaScript containers. Godot objects become object proxies. Object conversion includes enumerable prototype properties. Container cycles and nesting deeper than 64 levels are rejected. Godot string conversion truncates embedded NUL characters, including dictionary keys.</description>
         </method>
         <method name="bind_object">
             <return type="void" />
             <param index="0" name="propertyName" type="String" />
             <param index="1" name="instance" type="Object" />
             <param index="2" name="query_members" type="bool" default="false" />
-            <description>
-                Bind [i]Object[/i] to javascript global object(aka, window).
-                The default preserves existing property access, including C# public properties without [code][Export][/code].
-                Set query_members to true to enable metadata-based member queries: Object.keys() enumerates properties,
-                while in and Reflect.has() also recognize methods. These operations do not evaluate property getters.
-                Category, group, subgroup and internal metadata entries are excluded. Missing members use normal JavaScript lookup.
-                In this mode C# properties must have [code][Export][/code] to appear in Godot property metadata and be accessible.
-                Objects returned from callbacks or nested containers keep the default compatibility mode.
-                After [b]bind_object[/b], you can access the [i]Object[/i] via below javascript.
+            <description>Expose [param instance] as [code]window[propertyName][/code]. Install the binding in [signal on_window_object_ready] for each document.
 
-                [codeblocks]
-                [b]window.${propertyName}[/b]
-                // window is optional
-                [b]${propertyName}[/b]
-                [/codeblocks]
-            </description>
+The default compatibility mode allows direct member access, including ordinary public C# properties without [code][Export][/code].
+
+With [param query_members] enabled, [code]Object.keys()[/code] enumerates Godot property metadata, and [code]in[/code] and [code]Reflect.has()[/code] also recognize methods. Queries do not invoke getters. Categories, groups, subgroups and internal metadata entries are excluded. C# properties require [code][Export][/code] in this mode. Objects returned from callbacks or nested containers keep compatibility mode.
+
+The binding exposes the object's Godot API. Use a dedicated adapter object when only a selected application API should be reachable. Freed objects no longer expose their Godot members.</description>
         </method>
         <method name="execute_script">
             <return type="Variant" />
             <param index="0" name="script" type="String" />
-            <description>
-                Execute given javascript, return result from evaluating script, or NULL if an exception is thrown.
-            </description>
+            <description>Evaluate [param script] in the current page and return its converted result. Return Nil when the view is uninitialized, or when JavaScript evaluation or conversion fails; failures are reported in the Godot error log. Nil can also be a valid JavaScript null or undefined result.
+
+[codeblock]
+var title = view.execute_script("document.title")
+[/codeblock]</description>
+        </method>
+        <method name="fire_key_event">
+            <return type="void" />
+            <param index="0" name="key_event" type="InputEventKey" />
+            <description>Forward a keyboard event to an initialized page. Normal Control input forwards key events while the web view has focus.</description>
+        </method>
+        <method name="fire_mouse_event">
+            <return type="void" />
+            <param index="0" name="position" type="Vector2" />
+            <param index="1" name="button_index" type="int" />
+            <param index="2" name="is_pressed" type="bool" />
+            <description>Forward a mouse event to an initialized page. [param position] uses coordinates local to the web view, in pixels. Pass [code]MOUSE_BUTTON_NONE[/code] for motion, a mouse button with [param is_pressed] for press/release, or a wheel button for scrolling. The Control normally forwards its own GUI input automatically.</description>
+        </method>
+        <method name="on_update_frame">
+            <return type="void" />
+            <description>Internal lifecycle callback. Publishes the rendered texture after Godot drawing. It is connected automatically; applications should not invoke it.</description>
+        </method>
+        <method name="on_resized">
+            <return type="void" />
+            <description>Internal lifecycle callback. Resizes an initialized page to match the Control. It is connected automatically; applications should not invoke it.</description>
         </method>
     </methods>
     <members>
-        <member name="max_render_fps" type="int" setter="set_max_render_fps" getter="get_max_render_fps" default="0">
-            Limit this View's animation and repaint rate. Changing this property applies immediately and survives [method init_view]. Set 0 to remove the per-View limit; the SDK edition's maximum FPS still applies (60 for the public Free edition). Godot's frame cap and VSync are independent.
-        </member>
-        <member name="accelerated" type="bool" setter="set_accelerated" getter="get_accelerated" default="false">
-            Request GPU rendering. Set before [method init_view]; changing this property requires reinitializing the View. Compatibility, headless, and GPU initialization failure use the CPU Surface. Use [method is_accelerated] to query the active backend. Reinitializing reloads the page and resets its JavaScript state.
-        </member>
+        <member name="html" type="String" setter="set_html_content" getter="get_html_content" default="&quot;&quot;">Inline HTML. Setting it on an initialized view loads the content immediately. A nonempty value takes precedence over [member htmlUrl] when [method init_view] runs.</member>
+        <member name="htmlUrl" type="String" setter="set_html_url" getter="get_html_url" default="&quot;&quot;">Page URL. Project resources use URLs such as [code]file:///ui/index.html[/code]; HTTPS pages are also supported. Set a nonempty URL to navigate an initialized view.</member>
+        <member name="transparent" type="bool" setter="set_transparent" getter="get_transparent" default="false">Enable a transparent page background. Configure before [method init_view]. Changing it on an existing view requires reinitialization.</member>
+        <member name="lazy" type="bool" setter="set_lazy" getter="get_lazy" default="false">Defer automatic initialization when the node becomes ready. Set in the scene when layout or application setup must complete first, then call [method init_view] with a nonzero Control size.</member>
+        <member name="accelerated" type="bool" setter="set_accelerated" getter="get_accelerated" default="false">Request GPU rendering through Godot RenderingDevice. Configure before [method init_view]. Compatibility, headless and unavailable devices use CPU Surface rendering. Use [method is_accelerated] to check the actual backend. Reinitialization reloads the page.</member>
+        <member name="max_render_fps" type="int" setter="set_max_render_fps" getter="get_max_render_fps" default="0">Limit this view's animation and repaint rate. Changes apply immediately and survive [method init_view]. Zero removes the per-view limit; the SDK edition ceiling still applies (60 FPS for the public Free edition). Godot frame limits and VSync are independent.</member>
     </members>
     <signals>
         <signal name="on_window_object_ready">
-            <description>
-            Emit when the JavaScript window object is reset for a new page load.
-            </description>
+            <description>Emitted when the main frame receives a fresh JavaScript window object. Install functions and object bindings here before page scripts execute. This happens again after navigation or reload.</description>
         </signal>
         <signal name="on_dom_ready">
-            <description>
-            Emit when all JavaScript has been parsed and the document is ready.
-            </description>
+            <description>Emitted when Ultralight reports that a document is ready. Use it for DOM-dependent JavaScript. It is not a guarantee that asynchronous requests and all external images have finished loading.</description>
         </signal>
     </signals>
-    <constants>
-    </constants>
+    <constants />
 </class>

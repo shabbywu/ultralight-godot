@@ -10,7 +10,7 @@ ultralight-godot 通过 GDExtension 将 [Ultralight](https://ultralig.ht/) 集�
 
 ![在 Godot 中渲染 HTML 界面](https://github.com/user-attachments/assets/6216a3bb-6f5d-4d63-9aa7-102b0001135b)
 
-[安装](#安装) · [示例](#示例) · [JavaScript 绑定](#javascript-绑定) · [自动发布](#自动发布)
+[Showcase](https://shabbywu.github.io/ultralight-godot/zh-CN/) · [API 文档](https://shabbywu.github.io/ultralight-godot/zh-CN/api/) · [安装](#安装) · [示例](#示例) · [JavaScript 绑定](#javascript-绑定) · [自动发布](#自动发布)
 
 ## 功能
 
@@ -135,6 +135,22 @@ Godot 负责 Variant 转换、Callable 桥接、信号、View 生命周期、输
 构建时会将三个核心 SDK 运行库（`Ultralight`、`UltralightCore`、`WebCore`）
 复制到扩展所在目录；mini-browser 还会附带 `AppCore`。
 从源码构建时，可设置 `COPY_ULTRALIGHT_BINARY=OFF` 关闭复制。
+
+## Showcase 与 API 文档
+
+[在线展示](https://shabbywu.github.io/ultralight-godot/zh-CN/)收录四个示例的运行录制，
+[API 文档](https://shabbywu.github.io/ultralight-godot/zh-CN/api/)包含插件类的属性、方法与信号。
+API 内容由 `ultralight-view/doc_classes/` 的 Godot XML 文档生成。
+
+本地预览：
+
+```sh
+python3 scripts/build_site.py
+python3 -m http.server 8000 --directory dist
+```
+
+`Showcase Pages` 工作流构建 PR，并在 `main` 分支部署站点。
+仓库的 **Settings → Pages → Source** 需设为 **GitHub Actions**。
 
 ## 自动发布
 

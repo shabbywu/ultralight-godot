@@ -1,0 +1,35 @@
+<main class="shell" id="content">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <p class="eyebrow">GODOT × WEB × NATIVE</p>
+      <h1 id="hero-title">{{hero_first}}<br><span>{{hero_second}}</span></h1>
+      <p class="lead">{{hero_description}}</p>
+      <div class="actions"><a class="button" href="#projects">{{explore}} ↓</a><a class="button outline" href="{{API}}">{{nav_api}} ↗</a></div>
+    </div>
+    <div class="hero-art" role="img" aria-label="{{diagram_label}}">
+      <div class="window window-back"><span>● ● ●</span></div>
+      <div class="window window-middle"><span>● ● ●</span></div>
+      <div class="window window-front"><div class="bridge-words"><b>Godot</b><em>↔</em><b>JavaScript</b></div><small>UltralightView</small></div>
+      <p class="art-caption">{{diagram_one}}<br>{{diagram_two}}<br>{{diagram_three}}<i></i></p>
+    </div>
+  </section>
+  <section id="projects" aria-labelledby="collection-title">
+    <div class="collection-head"><div><p class="eyebrow">01 / THE COLLECTION</p><h2 id="collection-title">{{collection_title}}</h2></div><p>{{collection_note}}</p></div>
+    <div class="collection-tools"><p class="media-note">{{motion_note}}</p><button class="text-button all-motion" type="button" hidden>{{all_pause}}</button><nav class="project-index" aria-label="{{project_index}}">{{PROJECT_INDEX}}</nav></div>
+    {{PROJECTS}}
+  </section>
+  <section id="start" class="start" aria-labelledby="start-title">
+    <div><p class="eyebrow">02 / MAKE IT YOURS</p><h2 id="start-title">{{start_title}}</h2><p>{{start_description}}</p></div>
+    <div class="start-links"><a class="button outline" href="https://github.com/shabbywu/ultralight-godot/releases">{{download}} ↗</a><a class="repo-link" href="{{API}}">{{nav_api}} →</a></div>
+  </section>
+  <section class="setup-grid" aria-label="{{nav_start}}">
+    <article class="setup-card"><span class="step">01 / INSTALL</span><h3>{{install_title}}</h3><p>{{install_text}}</p><pre><code>your-project/
+├── project.godot
+└── addons/
+    └── ultralight-view/
+        ├── ultralight-view.gdextension
+        └── bin/</code></pre><p class="muted">{{requirements}}</p></article>
+    <article class="setup-card"><span class="step">02 / CONNECT</span><h3>{{connect_title}}</h3><p>{{connect_text}}</p>{{CONNECT_CODE}}</article>
+  </section>
+  <section class="html-example"><h3>ui/index.html</h3><p>{{html_text}}</p>{{HTML_CODE}}</section>
+</main>
