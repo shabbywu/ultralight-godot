@@ -1,0 +1,317 @@
+{
+  "definitions": [
+    {
+      "name": "Saint-Breaker",
+      "rarity": "legendary",
+      "id": "saint-breaker",
+      "width": 2,
+      "height": 4,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [
+        "mainhand"
+      ],
+      "twoHanded": true,
+      "power": 2
+    },
+    {
+      "name": "Pilgrim’s Oath",
+      "rarity": "rare",
+      "id": "pilgrims-oath",
+      "width": 1,
+      "height": 4,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [
+        "mainhand"
+      ],
+      "twoHanded": false,
+      "power": 3
+    },
+    {
+      "name": "Death’s Head",
+      "rarity": "rare",
+      "id": "deaths-head",
+      "width": 2,
+      "height": 2,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [
+        "head"
+      ],
+      "twoHanded": false,
+      "power": 4
+    },
+    {
+      "name": "Black Gauntlet",
+      "rarity": "magic",
+      "id": "black-gauntlet",
+      "width": 2,
+      "height": 2,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [
+        "gloves"
+      ],
+      "twoHanded": false,
+      "power": 5
+    },
+    {
+      "name": "Rondache",
+      "rarity": "rare",
+      "id": "rondache",
+      "width": 2,
+      "height": 2,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [
+        "offhand"
+      ],
+      "twoHanded": false,
+      "power": 6
+    },
+    {
+      "name": "Flanged Mace",
+      "rarity": "common",
+      "id": "flanged-mace",
+      "width": 1,
+      "height": 3,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [
+        "mainhand"
+      ],
+      "twoHanded": false,
+      "power": 7
+    },
+    {
+      "name": "Parrying Dagger",
+      "rarity": "magic",
+      "id": "parrying-dagger",
+      "width": 1,
+      "height": 3,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [
+        "mainhand"
+      ],
+      "twoHanded": false,
+      "power": 8
+    },
+    {
+      "name": "Gospel Reliquary",
+      "rarity": "relic",
+      "id": "gospel-reliquary",
+      "width": 2,
+      "height": 2,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [],
+      "twoHanded": false,
+      "power": 9
+    },
+    {
+      "name": "Chalice",
+      "rarity": "magic",
+      "id": "chalice",
+      "width": 1,
+      "height": 2,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [],
+      "twoHanded": false,
+      "power": 10
+    },
+    {
+      "name": "Ember Flask",
+      "rarity": "common",
+      "id": "ember-flask",
+      "width": 1,
+      "height": 2,
+      "rotatable": true,
+      "maxStack": 20,
+      "slots": [],
+      "twoHanded": false,
+      "power": 11
+    },
+    {
+      "name": "Garnet Brooch",
+      "rarity": "rare",
+      "id": "garnet-brooch",
+      "width": 1,
+      "height": 1,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [
+        "neck"
+      ],
+      "twoHanded": false,
+      "power": 12
+    },
+    {
+      "name": "Phylactery",
+      "rarity": "magic",
+      "id": "phylactery",
+      "width": 1,
+      "height": 2,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [],
+      "twoHanded": false,
+      "power": 13
+    },
+    {
+      "name": "Enamel Ring",
+      "rarity": "rare",
+      "id": "enamel-ring",
+      "width": 1,
+      "height": 1,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [
+        "ring"
+      ],
+      "twoHanded": false,
+      "power": 14
+    },
+    {
+      "name": "Beast Key",
+      "rarity": "relic",
+      "id": "beast-key",
+      "width": 1,
+      "height": 2,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [],
+      "twoHanded": false,
+      "power": 15
+    },
+    {
+      "name": "Ampulla",
+      "rarity": "magic",
+      "id": "ampulla",
+      "width": 1,
+      "height": 2,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [],
+      "twoHanded": false,
+      "power": 16
+    },
+    {
+      "name": "Greave",
+      "rarity": "common",
+      "id": "greave",
+      "width": 1,
+      "height": 2,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [],
+      "twoHanded": false,
+      "power": 17
+    },
+    {
+      "name": "War Axe",
+      "rarity": "rare",
+      "id": "war-axe",
+      "width": 2,
+      "height": 1,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [
+        "mainhand"
+      ],
+      "twoHanded": false,
+      "power": 18
+    },
+    {
+      "name": "Censer Cup",
+      "rarity": "relic",
+      "id": "censer-cup",
+      "width": 1,
+      "height": 1,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [],
+      "twoHanded": false,
+      "power": 19
+    },
+    {
+      "id": "gothic-breastplate",
+      "name": "Ashen Breastplate",
+      "rarity": "rare",
+      "width": 2,
+      "height": 3,
+      "rotatable": true,
+      "maxStack": 1,
+      "slots": [
+        "chest"
+      ],
+      "power": 20
+    },
+    {
+      "id": "double-cross",
+      "name": "Ember Gem",
+      "rarity": "relic",
+      "width": 1,
+      "height": 1,
+      "maxStack": 20,
+      "slots": [],
+      "power": 21
+    }
+  ],
+  "containers": [
+    {
+      "id": "ground",
+      "kind": "grid",
+      "width": 12,
+      "height": 12
+    },
+    {
+      "id": "bag",
+      "kind": "grid",
+      "width": 12,
+      "height": 6
+    },
+    {
+      "id": "head",
+      "kind": "slot",
+      "slot": "head"
+    },
+    {
+      "id": "chest",
+      "kind": "slot",
+      "slot": "chest"
+    },
+    {
+      "id": "gloves",
+      "kind": "slot",
+      "slot": "gloves"
+    },
+    {
+      "id": "neck",
+      "kind": "slot",
+      "slot": "neck"
+    },
+    {
+      "id": "ring1",
+      "kind": "slot",
+      "slot": "ring"
+    },
+    {
+      "id": "ring2",
+      "kind": "slot",
+      "slot": "ring"
+    },
+    {
+      "id": "mainhand",
+      "kind": "slot",
+      "slot": "mainhand"
+    },
+    {
+      "id": "offhand",
+      "kind": "slot",
+      "slot": "offhand"
+    }
+  ]
+}
