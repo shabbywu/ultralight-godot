@@ -70,7 +70,7 @@ class UI : public WindowListener, public LoadListener, public ViewListener {
     RefPtr<Panel> panel_;
     RefPtr<Container> body_;
     std::unique_ptr<Page> page_;
-    std::unique_ptr<ulbind17::Bindings> bindings_;
+    std::unique_ptr<ulbind17::API> bindings_;
     ulbind17::js::Context context_;
     Cursor cur_cursor_;
 

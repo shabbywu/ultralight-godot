@@ -117,18 +117,24 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y p7zip-full
           mkdir -p dist
+          require_file() {
+            if [ ! -s "$1" ]; then
+              echo "::error::Missing package file: $1"
+              exit 1
+            fi
+          }
           for platform in x11 win64 macos-arm64; do
             case "$platform" in
               x11) asset=linux; executable=mini-browser; prefix=lib; suffix=so ;;
               win64) asset=win64; executable=mini-browser.exe; prefix=; suffix=dll ;;
               macos-arm64) asset=macos-arm64; executable=mini-browser; prefix=lib; suffix=dylib ;;
             esac
-            test -s "artifacts/$platform/$executable"
+            require_file "artifacts/$platform/$executable"
             if [ "$platform" != win64 ]; then
               chmod +x "artifacts/$platform/$executable"
             fi
             for library in Ultralight UltralightCore WebCore AppCore; do
-              test -s "artifacts/$platform/${prefix}${library}.${suffix}"
+              require_file "artifacts/$platform/${prefix}${library}.${suffix}"
             done
             (cd "artifacts/$platform" && 7z a -t7z "../../dist/mini-browser.$asset.7z" .)
           done
