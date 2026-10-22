@@ -37,9 +37,9 @@ else()
   message(FATAL_ERROR "Not implemented support for ${CMAKE_SYSTEM_NAME}")
 endif()
 
-set_target_properties(
-  mini-browser PROPERTIES RUNTIME_OUTPUT_DIRECTORY
-                          ${CMAKE_SOURCE_DIR}/bin/mini-browser/${TARGET_PATH})
+# A generator expression prevents multi-config generators from adding Release/.
+set_target_properties(mini-browser PROPERTIES RUNTIME_OUTPUT_DIRECTORY
+  "$<1:${CMAKE_SOURCE_DIR}/bin/mini-browser/${TARGET_PATH}>")
 
 ultralight_godot_stage_runtime(mini-browser TRUE)
 
