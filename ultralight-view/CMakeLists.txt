@@ -33,6 +33,8 @@ set(GODOT_LINKER_FLAGS)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   # using Visual Studio C++
+  # Godot and SDK bridge templates can exceed the COFF section limit in Debug.
+  set(GODOT_COMPILE_FLAGS "${GODOT_COMPILE_FLAGS} /bigobj")
   set(GODOT_COMPILE_FLAGS "${GODOT_COMPILE_FLAGS} /WX") # /GF /MP
   set(GODOT_COMPILE_FLAGS "${GODOT_COMPILE_FLAGS} /DTYPED_METHOD_BIND")
 
