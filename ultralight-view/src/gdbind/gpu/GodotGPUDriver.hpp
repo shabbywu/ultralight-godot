@@ -494,8 +494,8 @@ struct GodotGPUDriver::Impl {
             if (textured) rd->draw_list_bind_uniform_set(list,texture_set,1);
             rd->draw_list_bind_vertex_array(list,g.array);
             rd->draw_list_bind_index_array(list,g.slices[slice_key]);
-            // The generated DrawIndex push-constant block contains one uint.
-            const uint32_t record = uint32_t(index);
+            // Match the explicit 16-byte DrawIndex block across Godot versions.
+            const uint32_t record[4] = {uint32_t(index), 0, 0, 0};
             auto push = copy_bytes(&record,sizeof(record));
             rd->draw_list_set_push_constant(list,push,push.size());
             rd->draw_list_draw(list,true,1); ++draws; ++shader_draws[c.shader];
