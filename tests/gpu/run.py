@@ -50,7 +50,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--godot', default='godot', help='Godot executable name on PATH or executable path (.NET build for interop/sample4)')
     parser.add_argument('--library', required=True, type=Path, help='Built ultralight-view shared library; SDK binaries must be beside it')
-    parser.add_argument('--task', choices=['validate', 'interop', 'sample4', 'benchmark', 'api', 'containers', 'experience'], default='validate')
+    parser.add_argument('--task', choices=['validate', 'interop', 'sample4', 'benchmark', 'api', 'managed', 'containers', 'experience'], default='validate')
     parser.add_argument('--backend', choices=['gpu', 'cpu', 'compatibility', 'headless'], default='gpu')
     parser.add_argument('--driver', help='Override the RenderingDevice driver; otherwise use the Godot default')
     parser.add_argument('--objects', type=int, default=480, choices=[120,240,480,960,1440], help='Animated objects for the benchmark')
@@ -72,8 +72,8 @@ def main():
     godot = shutil.which(args.godot)
     if godot is None:
         parser.error('Godot executable not found; set --godot to its executable name or path')
-    dotnet = shutil.which('dotnet') if args.task in ['sample4', 'interop'] else None
-    if args.task in ['sample4', 'interop'] and dotnet is None:
+    dotnet = shutil.which('dotnet') if args.task in ['sample4', 'interop', 'managed'] else None
+    if args.task in ['sample4', 'interop', 'managed'] and dotnet is None:
         parser.error('dotnet executable not found; install a .NET SDK for interop/sample4')
     library = args.library.resolve()
     if not library.is_file():
@@ -105,15 +105,27 @@ renderer/rendering_method="mobile"
     for path in (ROOT/'tests/gpu').iterdir():
         if path.suffix == '.gd':
             shutil.copy2(path, stage/path.name)
-    if args.task in ['api', 'containers', 'experience']:
+    if args.task in ['api', 'managed', 'containers', 'experience']:
         for path in (ROOT/'tests/api').iterdir():
-            if path.suffix == '.gd':
+            if path.suffix == '.gd' or args.task == 'managed' and path.suffix in ['.cs', '.csproj']:
                 shutil.copy2(path, stage/path.name)
+        if args.task == 'managed':
+            managed = stage/'addons/ultralight-view/csharp'
+            managed.mkdir(parents=True, exist_ok=True)
+            for path in (ROOT/'addons/ultralight-view/csharp').glob('*.cs'):
+                shutil.copy2(path, managed/path.name)
+            with (stage/'project.godot').open('a', encoding='utf-8') as project:
+                project.write('\n[dotnet]\nproject/assembly_name="ApiInterop"\n')
     if args.task == 'interop':
         shutil.copy2(ROOT/'tests/gpu/BridgeProbe.cs', stage/'BridgeProbe.cs')
         shutil.copy2(ROOT/'tests/gpu/BridgeInterop.csproj', stage/'BridgeInterop.csproj')
         with (stage/'project.godot').open('a', encoding='utf-8') as project:
             project.write('\n[dotnet]\nproject/assembly_name="BridgeInterop"\n')
+    if args.task in ['sample4', 'interop']:
+        managed = stage/'addons/ultralight-view/csharp'
+        managed.mkdir(parents=True, exist_ok=True)
+        for path in (ROOT/'addons/ultralight-view/csharp').glob('*.cs'):
+            shutil.copy2(path, managed/path.name)
     addon = stage/'addons/ultralight-view'
     addon.mkdir(parents=True,exist_ok=True)
     binaries = addon/'bin'
@@ -133,8 +145,8 @@ renderer/rendering_method="mobile"
     project = stage/'project.godot'
     original = project.read_text(encoding='utf-8')
     project.write_text(re.sub(r'^theme/custom_font=.*\n', '', original, flags=re.M), encoding='utf-8')
-    if args.task in ['sample4', 'interop']:
-        project_name = 'BridgeInterop.csproj' if args.task == 'interop' else 'GPU.csproj'
+    if args.task in ['sample4', 'interop', 'managed']:
+        project_name = 'ApiInterop.csproj' if args.task == 'managed' else 'BridgeInterop.csproj' if args.task == 'interop' else 'GPU.csproj'
         run([dotnet, 'build', str(stage/project_name)], stage/'dotnet.log')
     run(base+['--headless', '--editor', '--import'], stage/'import.log')
     project.write_text(original, encoding='utf-8')
@@ -144,7 +156,7 @@ renderer/rendering_method="mobile"
         base += ['--rendering-method', 'gl_compatibility']
     elif args.driver:
         base += ['--rendering-driver', args.driver]
-    script = {'validate': 'validate.gd', 'interop': 'interop.gd', 'sample4': 'sample4.gd', 'benchmark': 'benchmark.gd', 'api': 'api.gd', 'containers': 'containers.gd', 'experience': 'experience.gd'}[args.task]
+    script = {'validate': 'validate.gd', 'interop': 'interop.gd', 'sample4': 'sample4.gd', 'benchmark': 'benchmark.gd', 'api': 'api.gd', 'managed': 'managed.gd', 'containers': 'containers.gd', 'experience': 'experience.gd'}[args.task]
     command = base+['--script', script, '--']
     if args.task == 'benchmark':
         command.insert(len(base), '--disable-render-loop')
@@ -168,6 +180,7 @@ renderer/rendering_method="mobile"
         'experience': 'EXPERIENCE PASS ',
         'containers': 'CONTAINERS PASS ',
         'api': 'API PASS ',
+        'managed': 'MANAGED_API PASS ',
         'validate': 'VALIDATION PASS ',
         'interop': 'CSHARP_INTEROP PASS ',
         'sample4': 'SAMPLE4 PASS ',

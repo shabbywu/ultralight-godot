@@ -2,7 +2,7 @@
 
 Run from the repository root with Python 3 and a built extension. Set `ULTRALIGHT_LIBRARY` to the extension library; its matching SDK libraries must be beside it. The runner uses `godot` from PATH, or the executable supplied with `--godot`.
 
-GPU checks require a graphics device with Godot RenderingDevice support. The `interop` and `sample4` tasks also require Godot .NET and a compatible .NET SDK. Compatibility and headless modes check CPU fallback.
+GPU checks require a graphics device with Godot RenderingDevice support. The `interop`, `managed` and `sample4` tasks also require Godot .NET and a compatible .NET SDK. Compatibility and headless modes check CPU fallback.
 
 The C# projects target `Godot.NET.Sdk/4.4.1` and .NET 8.
 
@@ -15,6 +15,7 @@ python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --backend headless
 python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --task interop
 python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --task sample4
 python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --task api --backend headless
+python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --task managed --backend headless
 python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --task experience --backend compatibility
 python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --task containers --backend headless
 ```
@@ -25,6 +26,7 @@ python3 tests/gpu/run.py --library "$ULTRALIGHT_LIBRARY" --task containers --bac
 | `interop` | C# objects and delegates, exported member queries without getter evaluation, default non-exported property access, JS Callables, Promise/async results and rejection, GDScript default/bound arguments, callback call errors, navigation cancellation |
 | `sample4` | Sample scene input, controls, backend switching, object presets, frame-limit controls and scene reload; requires `--backend gpu` |
 | `api` | Registry installation before page scripts, main/frame signals, HTTP redirects, multiple views, namespace conflicts, shared identity/cycles, snapshots, revocation, Promise tasks and reentrant close |
+| `managed` | C# Task/ValueTask, ordinary CLR objects and lazy collections, JS IList/IDictionary adapters, cancellation, exceptions and refresh |
 | `experience` | Real-window text clipboard, committed Chinese text, CSS cursor, focus handoff and embedded Inspector rebuild/target removal |
 | `containers` | 1k/10k/100k native object graphs, construction/exposure, sparse reads, full traversal and snapshots; writes containers.json |
 
