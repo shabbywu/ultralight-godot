@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "site"
 OUTPUT = ROOT / "dist"
 LOCALES = ("zh-CN", "en")
+SITE_URL = "https://ultralight-godot.shabbywu.cn"
 REPOSITORY = "https://github.com/shabbywu/ultralight-godot"
 TOKEN = re.compile(r"\{\{([A-Za-z_]+)\}\}")
 INTERNAL = {"on_update_frame", "on_resized", "update_frame"}
@@ -452,6 +453,7 @@ def write_page(
         ENTRY=str(entry).lower(),
         TITLE=e(title),
         DESCRIPTION=e(description),
+        CANONICAL=e(f"{SITE_URL}/{locale}/{section}"),
         PREFIX=prefix,
         HOME=home,
         API=home + "api/",
@@ -464,6 +466,40 @@ def write_page(
         SEARCH_INDEX=search,
     )
     target.write_text(page, encoding="utf-8")
+
+
+def write_sitemap() -> None:
+    """List localized pages at their canonical URLs with language alternates."""
+    namespace = "http://www.sitemaps.org/schemas/sitemap/0.9"
+    xhtml = "http://www.w3.org/1999/xhtml"
+    ET.register_namespace("", namespace)
+    ET.register_namespace("xhtml", xhtml)
+    sitemap = ET.Element(f"{{{namespace}}}urlset")
+    for locale in LOCALES:
+        for page in sorted((OUTPUT / locale).rglob("*.html")):
+            section = page.relative_to(OUTPUT / locale).as_posix()
+            if section.endswith("index.html"):
+                section = section.removesuffix("index.html")
+            url = ET.SubElement(sitemap, f"{{{namespace}}}url")
+            ET.SubElement(url, f"{{{namespace}}}loc").text = (
+                f"{SITE_URL}/{locale}/{section}"
+            )
+            for alternate in LOCALES:
+                ET.SubElement(
+                    url,
+                    f"{{{xhtml}}}link",
+                    rel="alternate",
+                    hreflang=alternate,
+                    href=f"{SITE_URL}/{alternate}/{section}",
+                )
+    ET.indent(sitemap, space="  ")
+    ET.ElementTree(sitemap).write(
+        OUTPUT / "sitemap.xml", encoding="utf-8", xml_declaration=True
+    )
+    (OUTPUT / "robots.txt").write_text(
+        f"User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap.xml\n",
+        encoding="utf-8",
+    )
 
 
 def build() -> None:
@@ -552,6 +588,7 @@ def build() -> None:
             licenses,
             section="licenses.html",
         )
+    write_sitemap()
     (OUTPUT / ".nojekyll").touch()
     print(
         f"Built {len(projects)} samples and {len(CLASSES)} API classes in {len(LOCALES)} locales → {OUTPUT}"
