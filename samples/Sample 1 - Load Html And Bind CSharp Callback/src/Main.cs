@@ -1,3 +1,4 @@
+using Ultralight;
 using Godot;
 using System;
 using Godot.NativeInterop;
@@ -6,23 +7,25 @@ namespace demo;
 
 public partial class Main : Node2D {
     public int A = 1;
+    private UltralightApi _api;
+    private UltralightViewClient _web;
 
     private TextureRect View { get; set; }
     private Label LabelA { get; set; }
 
     // Called when the node enters the scene tree for the first time.
-    public override void _Ready() {
+    public override async void _Ready() {
         View = GetNode<TextureRect>("View");
-        View.Connect("on_window_object_ready", new Callable(this, "OnWindowObjectReady"));
-        View.Connect("on_dom_ready", Callable.From(() =>
-        {
-          GD.Print("on dom ready");
-        }));
+        _web = UltralightViewClient.Wrap(View);
+        _api = new UltralightApi("game");
+        _api.Register("logInfo", Callable.From<Variant>(LogInfo));
+        _api.RegisterObject("main", this, "A", "LogInfo");
+        _api.Attach(_web);
 
         LabelA = GetNode<Label>("LabelA");
 
         // Load html, code base on https://www.w3schools.com/css/tryit.asp?filename=trycss_buttons_hover
-        View.Set("html", $@"
+        try { await _web.LoadHtmlAsync($@"
 <!DOCTYPE html>
 <html>
 <head>
@@ -101,15 +104,15 @@ public partial class Main : Node2D {
 <p>Use the :hover selector to change the style of the button when you move the mouse over it.</p>
 <p><strong>Tip:</strong> Use the transition-duration property to determine the speed of the ""hover"" effect:</p>
 
-<button class=""button button1"" onclick=""logInfo('invoke simple godot::Callbale'); return false;"">Green</button>
-<button class=""button button2"" onclick=""logInfo(Math.random())"">Blue</button>
-<button class=""button button3"" onclick=""logInfo(['convert js array to godot::Array', 1,2,3])"">Red</button>
-<button class=""button button4"" onclick=""logInfo({{case: 'convert js object to godot::Dictionary', complex: {{array: []}}}})"">Gray</button>
-<button class=""button button5"" onclick=""main.LogInfo('access godot::Object function and property: ' + main.A++)"">Black</button>
+<button class=""button button1"" onclick=""game.logInfo('invoke simple godot::Callbale'); return false;"">Green</button>
+<button class=""button button2"" onclick=""game.logInfo(Math.random())"">Blue</button>
+<button class=""button button3"" onclick=""game.logInfo(['convert js array to godot::Array', 1,2,3])"">Red</button>
+<button class=""button button4"" onclick=""game.logInfo({{case: 'convert js object to godot::Dictionary', complex: {{array: []}}}})"">Gray</button>
+<button class=""button button5"" onclick=""game.main.LogInfo('access godot::Object function and property: ' + game.main.A++)"">Black</button>
 
 </body>
 </html>
-");
+"); } catch (System.Exception error) { GD.PushError(error.ToString()); }
     }
 
     // Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -121,10 +124,5 @@ public partial class Main : Node2D {
         GD.Print(message);
     }
 
-    public void OnWindowObjectReady() {
-        // bind function to window.logInfo
-        View.Call("bind_func", "logInfo", new Callable(this, "LogInfo"));
-        // bind object to window.main
-        View.Call("bind_object", "main", this);
-    }
+    public override void _ExitTree() => _api?.Dispose();
 }

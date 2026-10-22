@@ -1,3 +1,4 @@
+using Ultralight;
 using System;
 using System.Collections.Generic;
 using Godot;
@@ -19,6 +20,7 @@ public partial class Gui : Control {
     private static readonly Color Green = new("5ee3b7");
     private static readonly Color Orange = new("ffbc74");
     private static readonly int[] ObjectCounts = { 120, 240, 480, 960, 1440 };
+    private UltralightViewClient _web;
     private SubViewport _viewport;
     private TextureRect _view, _preview;
     private Label _fpsLabel, _backend, _fpsValue, _frameValue, _cpuValue, _uploadValue, _uploadCaption;
@@ -38,18 +40,19 @@ public partial class Gui : Control {
         _viewport = GetNode<SubViewport>("SubViewport");
         _view = GetNode<TextureRect>("SubViewport/UltralightView");
         _fpsLabel = GetNode<Label>("SubViewport/PerformanceOverlay/FPSLabel");
+        _web = UltralightViewClient.Wrap(_view);
         BuildInterface();
-        _view.Connect("on_dom_ready", Callable.From(() => {
+        _view.Connect("dom_ready", Callable.From<GodotObject>(_ => {
             StartAnimation();
             _status.Text = "● 本地页面已就绪 · 可点击画面中的交互按钮";
             backing_OnDomReady?.Invoke();
         }));
-        _view.Connect("on_window_object_ready", Callable.From(() => backing_OnWindowObjectReady?.Invoke()));
+        _view.Connect("window_ready", Callable.From<GodotObject>(_ => backing_OnWindowObjectReady?.Invoke()));
         ApplyFrameLimit();
         _view.Set("accelerated", UseGpu);
-        _view.Call("init_view");
+        _web.Rebuild();
         if (EnableInspector)
-            Engine.Singleton.GetSingleton("UltralightSingleton").Call("start_remove_inspector_server", "127.0.0.1", 19999);
+            Engine.Singleton.GetSingleton("UltralightSingleton").Call("start_remote_inspector_server", "127.0.0.1", 19999);
         UpdateControls();
     }
 
@@ -66,7 +69,7 @@ public partial class Gui : Control {
         var color = gpu ? Green : Orange;
         var cpuMs = _cpuUsTotal / _samples / 1000;
         var fps = Engine.GetFramesPerSecond();
-        var pageFrames = _view.Call("execute_script", "typeof canvasBenchmarkStats === 'object' ? canvasBenchmarkStats.frames : 0").AsDouble();
+        var pageFrames = _web.Evaluate( "typeof canvasBenchmarkStats === 'object' ? canvasBenchmarkStats.frames : 0").AsDouble();
         _pageFpsValue.Text = _hasPageBaseline && pageFrames >= _lastPageFrames
             ? $"{(pageFrames - _lastPageFrames) / _elapsed:0.0}" : "--";
         _lastPageFrames = pageFrames;
@@ -262,7 +265,7 @@ public partial class Gui : Control {
         if (UseGpu != gpu) {
             UseGpu = gpu; ResetMeasurements();
             _status.Text = "● 正在切换渲染后端…";
-            _view.Set("accelerated", UseGpu); _view.Call("init_view");
+            _view.Set("accelerated", UseGpu); _web.Rebuild();
         }
         UpdateControls();
     }
@@ -281,7 +284,7 @@ public partial class Gui : Control {
     }
     private void StartAnimation() {
         CanvasObjects = Math.Clamp(CanvasObjects, 24, 1440);
-        _view.Call("execute_script", $"if (typeof startCanvasBenchmark === 'function') {{ startCanvasBenchmark({CanvasObjects}); setBenchmarkMode('{(UseSvg ? "svg" : "canvas")}'); }}");
+        _web.Evaluate( $"if (typeof startCanvasBenchmark === 'function') {{ startCanvasBenchmark({CanvasObjects}); setBenchmarkMode('{(UseSvg ? "svg" : "canvas")}'); }}");
     }
     public override void _Input(InputEvent @event) {
         if (@event is not InputEventKey key || !key.Pressed || key.Echo || key.CtrlPressed || key.MetaPressed || key.AltPressed) return;

@@ -1,3 +1,4 @@
+using Ultralight;
 using AshenReliquary;
 using AshenReliquary.Backend;
 using Godot;
@@ -8,7 +9,8 @@ public partial class Main : Control
     private Control _view = null!;
     private GameBridge? _bridge;
     private bool _documentReady;
-    private bool _viewInitialized;
+    private UltralightApi? _api;
+    private UltralightViewClient _web = null!;
     public Game? Game { get; private set; }
 
     public override void _Ready()
@@ -23,13 +25,15 @@ public partial class Main : Control
             _bridge.Initialize(Game);
             Game.Changed += OnChanged;
             Game.ObserverFailed += OnObserverFailed;
-            _view.Connect("on_window_object_ready", Callable.From(BindDocument));
-            _view.Connect("on_dom_ready", Callable.From(() => _documentReady = true));
+            _web = UltralightViewClient.Wrap(_view);
+            _api = new UltralightApi("inventory");
+            _api.RegisterNativeObject("backend", _bridge, copyContainers: true);
+            _api.Attach(_web);
+            _view.Connect("load_started", Callable.From<GodotObject>(_ => _documentReady = false));
+            _view.Connect("dom_ready", Callable.From<GodotObject>(_ => _documentReady = true));
             GetNode<Button>("Layout/Toolbar/New").Pressed += () => Game.CreateRelic();
             GetNode<Button>("Layout/Toolbar/Reload").Pressed += Reload;
-            _view.Set("htmlUrl", "file:///ui/index.html");
-            _view.Resized += InitializeView;
-            Callable.From(InitializeView).CallDeferred();
+            _ = _web.LoadUrlAsync("file:///ui/index.html");
         }
         catch (Exception error)
         {
@@ -37,39 +41,23 @@ public partial class Main : Control
             GetNode<Label>("Layout/Toolbar/Status").Text = "Load blocked: " + error.Message;
         }
     }
-    private void InitializeView()
-    {
-        // Containers assign a nonzero size after child nodes become ready.
-        if (_viewInitialized || _view.Size.X <= 0 || _view.Size.Y <= 0) return;
-        _viewInitialized = true;
-        _view.Resized -= InitializeView;
-        _view.Call("init_view");
-    }
-
-    private void BindDocument()
-    {
-        _documentReady = false;
-        _view.Call("bind_object", "reliquaryBackend", _bridge!);
-        _view.Call("execute_script", "window.inventory={backend:reliquaryBackend}; void 0");
-    }
     public void Reload()
     {
         _documentReady = false;
-        _view.Call("execute_script", "location.reload(); void 0");
+        _web.Evaluate("location.reload(); void 0");
     }
     private void OnChanged(StateChanged value)
     {
         if (!_documentReady) return;
         // Bind a detached event payload via Godot's container conversion; no JSON or polling.
-        _view.Call("bind_func", "reliquaryChange", Callable.From(() => WireCodec.Event(value)));
-        _view.Call("execute_script", "window.dispatchEvent(new CustomEvent('inventory-changed',{detail:reliquaryChange()})); void 0");
+        _api!.Register("change", Callable.From(() => WireCodec.Event(value)));
+        _web.Evaluate("window.dispatchEvent(new CustomEvent('inventory-changed',{detail:inventory.change()})); void 0");
     }
     private static void OnObserverFailed(Exception error) => GD.PushError("Inventory notification failed: " + error.Message);
     public override void _ExitTree()
     {
         if (Game is not null) { Game.Changed -= OnChanged; Game.ObserverFailed -= OnObserverFailed; }
-        if (_view.IsConnected(Control.SignalName.Resized, Callable.From(InitializeView)))
-            _view.Resized -= InitializeView;
+        _api?.Dispose();
         _bridge?.Dispose();
         _bridge = null;
     }

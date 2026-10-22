@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[node name="InspectorDemo" type="HSplitContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+split_offset = 480
+
+[node name="Page" type="UltralightView" parent="."]
+custom_minimum_size = Vector2(320, 360)
+layout_mode = 2
+size_flags_horizontal = 3
+source_type = 1
+initial_html = "<!doctype html><style>body{font:20px sans-serif;padding:24px;background:#182334;color:white}button{cursor:pointer;padding:12px}input{display:block;margin:20px 0;padding:12px}</style><h1>Ultralight Inspector</h1><input placeholder='Type or paste text'><button onclick='console.log(\"Hello from Godot\");this.textContent=\"Clicked\"'>Inspect this button</button>"
+
+[node name="Inspector" type="UltralightInspector" parent="." node_paths=PackedStringArray("target_view")]
+custom_minimum_size = Vector2(480, 360)
+layout_mode = 2
+size_flags_horizontal = 3
+target_view = NodePath("../Page")
