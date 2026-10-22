@@ -52,6 +52,7 @@ remove this SDK edition limit.
    └── addons/
        └── ultralight-view/
            ├── ultralight-view.gdextension
+           ├── csharp/
            └── bin/
                ├── win64/
                ├── x11/
@@ -99,56 +100,43 @@ above for setup instructions.
 
 ## JavaScript bindings
 
-Expose a Godot object to JavaScript with the default compatibility mode:
+Register once; bindings are restored after navigation under your chosen namespace.
 
 ```gdscript
-view.bind_object("probe", probe)
+var api := UltralightAPI.create("game")
+
+func _ready():
+    api.register_function("save", save_game)
+    api.register_object("inventory", inventory)
+    api.attach($WebView)
+    var loading = $WebView.load_url("file:///ui/index.html")
+    if not loading.is_completed():
+        await loading.completed
+    var result = loading.get_result()
+    if not result.ok:
+        push_error(result.error.message)
 ```
 
-Enable member queries for an individual binding with the third argument:
-
-```gdscript
-view.bind_object("probe", probe, true)
-view.execute_script("Object.keys(probe)")
-view.execute_script("'label' in probe && Reflect.has(probe, 'echo')")
+```javascript
+await game.save();
+game.inventory.items.push(item);
 ```
 
-In query mode:
+The new API provides main-document and frame signals, explicit Result/Task values,
+C# async/await, and bidirectional shared containers. Containers are wrapped lazily;
+writes update their source. Use `evaluate_copy()` or `snapshot()` for independent
+copies. `UltralightBindingOptions` controls root members, nested writes and copying.
 
-- `Object.keys()` enumerates Godot property metadata. Methods can be queried but
-  are not enumerable.
-- Categories, groups, subgroups, and internal entries are excluded.
-- Member queries use current metadata without reading property values or running
-  getters. Missing members follow ordinary JavaScript lookup.
-- A freed object's Godot members disappear from queries and enumeration.
-- **C# properties require `[Export]`.** Ordinary public C# properties remain
-  accessible through the default compatibility mode.
+See the [usage and migration guide](docs/api-guide.md) for API contracts and
+changes from earlier releases. Use the matching tag's documentation for an older release.
+C# helpers target Godot .NET 4.4.1 / .NET 8 or a compatible environment; compile the
+package's `csharp/*.cs` sources in the project.
 
-The query option applies only to the explicit binding. Objects returned from
-callbacks or nested containers keep compatibility mode. Install bindings again
-for each document, normally in `on_window_object_ready`. Returned JavaScript
-Callables and pending Promises expire when the document is replaced or its View
-is destroyed.
-
-### Conversion and implementation details
-
-The extension uses ulbind17 for checked JavaScript operations, retained handles,
-Promise observation, and traversal protection. Godot handles Variant conversion,
-Callable trampolines, signals, View lifecycle, input, and texture upload.
-
-- JavaScript objects converted to `Dictionary` include enumerable prototype
-  properties.
-- `null` and `undefined` map to Nil; numbers map to double.
-- Container conversion rejects cycles and nesting deeper than 64 levels.
-- Godot String conversion truncates embedded NUL characters, including in
-  Dictionary keys. ulbind17's standalone JSC string helpers preserve NUL, but this
-  adapter does not.
-
-The resource filesystem uses ulbind17's embedded resource overlay with Godot's
-filesystem as fallback. Runtime staging copies the three core SDK libraries
-(`Ultralight`, `UltralightCore`, and `WebCore`) beside the extension; mini-browser
-also includes `AppCore`. Set `COPY_ULTRALIGHT_BINARY=OFF` when building from source
-to disable copying.
+Add `UltralightInspector` and set `target_view` for embedded developer tools, or use
+the [split-view scene](samples/inspector.tscn). Text clipboard, CSS cursors and Control
+focus use Godot integration without AppCore. Full IME preedit is not implemented.
+The extension uses Ultralight, UltralightCore and WebCore; the standalone mini-browser
+also uses AppCore.
 
 ## Showcase and API reference
 
@@ -156,6 +144,8 @@ The [showcase](https://shabbywu.github.io/ultralight-godot/en/) includes recordi
 of all four samples. The [API reference](https://shabbywu.github.io/ultralight-godot/en/api/)
 covers plugin properties, methods and signals, generated from the Godot XML docs
 in `ultralight-view/doc_classes/`.
+Chinese descriptions and search summaries use `site/locales/api.zh-CN.json`;
+signatures and defaults share the XML source, with translation completeness checked during the build.
 
 Preview locally:
 

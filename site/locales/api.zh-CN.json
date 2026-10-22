@@ -1,0 +1,269 @@
+{
+  "UltralightAPI": {
+    "brief_description": "使用应用自行命名的 JavaScript 命名空间，持久注册业务接口。",
+    "description": "通过 [method create] 指定命名空间，注册函数或对象，再附着到一个或多个 [UltralightView]。命名空间必须是单个 ASCII JavaScript 标识符，不能与页面已有全局名称冲突。\n\n每次创建主文档时，注册项都会在 window_ready 信号和页面脚本执行前安装。容器默认按引用共享；注销、分离或关闭注册表会同时撤销 JS 已缓存的引用。命名空间内保留 $bridge，提供 copy(value) 和保留字典键类型的 get/set 方法。所有桥接操作均应在 Godot 主线程执行。",
+    "methods": {
+      "create": "为一个 ASCII JavaScript 标识符创建注册表。无效名称或保留字返回 null；仅创建注册表不会立即导出全局对象。",
+      "get_namespace": "读取 [member namespace]。",
+      "is_closed": "返回注册表是否已关闭。",
+      "register_function": "注册或替换同步 Callable。参数和返回值默认使用共享转换；返回安装结果。可通过 options 显式选择按值转换。",
+      "register_async": "注册接收 [code](UltralightTask request, Array arguments)[/code] 的处理器。JS 调用得到 Promise；处理器须在主线程调用 request.resolve 或 request.reject。",
+      "register_object": "注册或替换 Godot 对象、Array 或 Dictionary，可配置根成员名单、只读和按值转换。Nil 会被拒绝。",
+      "unregister": "从所有已附着 View 中移除此注册项，并撤销旧代理及其嵌套引用。",
+      "attach": "附着到 UltralightView。有可用文档时立即安装，并在后续文档中自动恢复。重复附着幂等；命名冲突返回错误，安装失败时回滚已安装的本次注册项。",
+      "detach": "从指定 View 移除该注册表的命名空间并撤销绑定，不关闭 View。重复分离幂等。",
+      "close": "分离全部 View、撤销代理并清除注册定义。可重复调用；关闭后不能再次注册或附着。"
+    },
+    "members": {
+      "namespace": "调用方选择的 JS 全局名称，只读。"
+    },
+    "signals": {}
+  },
+  "UltralightBinding": {
+    "brief_description": "管理一个文档内可显式撤销的临时绑定。",
+    "description": "调用 [method close] 撤销导出的函数、对象及其嵌套代理。仅丢弃此句柄不会自动解绑。旧绑定被替换后，关闭旧句柄不会移除新绑定。",
+    "methods": {
+      "close": "撤销当前导出及其嵌套代理。重复调用无副作用。",
+      "is_closed": "返回绑定是否已显式撤销，或其文档是否已失效。"
+    },
+    "members": {},
+    "signals": {}
+  },
+  "UltralightBindingOptions": {
+    "brief_description": "配置绑定的成员范围、可写性和容器转换方式。",
+    "description": "选项在注册或绑定时复制。之后修改选项对象不会改变已有绑定。read_only 限制当前绑定及嵌套容器的写入，但不会推断调用方法是否有副作用。",
+    "methods": {
+      "get_copy_containers": "读取 [member copy_containers]。",
+      "set_copy_containers": "设置 [member copy_containers]。",
+      "get_read_only": "读取 [member read_only]。",
+      "set_read_only": "设置 [member read_only]。",
+      "get_members": "读取 [member members]。",
+      "set_members": "设置 [member members]。"
+    },
+    "members": {
+      "copy_containers": "为此注册项启用递归按值转换。默认 false，即共享容器。",
+      "read_only": "拒绝此绑定及嵌套容器的写入；方法自身副作用仍由应用负责。默认 false。",
+      "members": "根对象的成员名单。空列表使用默认公开成员规则；枚举不会调用 getter。"
+    },
+    "signals": {}
+  },
+  "UltralightError": {
+    "brief_description": "保存脚本、加载、转换和生命周期错误的结构化信息。",
+    "description": "失败时通过 [member UltralightResult.error] 读取。来源位置和堆栈只在底层提供时填充；有效的 JS null 是成功结果，与错误不同。错误信息不依赖原文档继续存活。",
+    "methods": {
+      "get_code": "读取 [member code]。",
+      "get_message": "读取 [member message]。",
+      "get_stack": "读取 [member stack]。",
+      "get_source_url": "读取 [member source_url]。",
+      "get_line": "读取 [member line]。",
+      "get_column": "读取 [member column]。"
+    },
+    "members": {
+      "code": "错误类别，例如 ScriptException、TypeMismatch、Unsupported、TraversalLimit、PageGone、Cancelled 或 Timeout。",
+      "message": "供阅读的错误说明。",
+      "stack": "可获得的 JS 堆栈；没有时为空字符串。",
+      "source_url": "可获得的脚本来源 URL；没有时为空字符串。",
+      "line": "来源行号；不可用时为 0。",
+      "column": "来源列号；不可用时为 0。"
+    },
+    "signals": {}
+  },
+  "UltralightFrameEvent": {
+    "brief_description": "提供只读的导航、框架和 URL 信息。",
+    "description": "navigation_id 标识主文档代次，frame_id 标识 SDK 框架。信号回调可以同步导航或关闭 View；需要延迟处理时，应保存并比较 navigation_id，避免把旧事件用于新文档。",
+    "methods": {
+      "get_navigation_id": "读取 [member navigation_id]。",
+      "get_frame_id": "读取 [member frame_id]。",
+      "is_main_frame": "读取 [member is_main_frame]。",
+      "get_url": "读取 [member url]。"
+    },
+    "members": {
+      "navigation_id": "主文档代次，只读。",
+      "frame_id": "SDK 框架标识，只读。",
+      "is_main_frame": "事件是否属于主框架，只读。",
+      "url": "SDK 为本次框架事件提供的 URL，只读。"
+    },
+    "signals": {}
+  },
+  "UltralightInspector": {
+    "brief_description": "在 Godot 场景中显示 UltralightView 的内嵌开发者工具。",
+    "description": "设置 [member target_view] 并为控件提供有效尺寸。可见时创建 Inspector；匹配 SDK 的页面资源已内嵌，导出项目无需额外复制这些文件。\n\n目标重建后自动重新关联，目标释放后清除关联。此节点继承 View 的显示和输入能力；请通过 target_view 指定调试目标，不要用继承的加载方法加载业务页面。",
+    "methods": {
+      "set_target_view": "设置 [member target_view]。",
+      "get_target_view": "读取 [member target_view]。"
+    },
+    "members": {
+      "target_view": "需要调试的 UltralightView，不会阻止普通 Node 被释放。"
+    },
+    "signals": {}
+  },
+  "UltralightJSArray": {
+    "brief_description": "保留当前文档中的实时 JavaScript Array。",
+    "description": "使用继承的 get_value、set_value、append 和 remove 访问数组。remove 遵循 JS delete 语义，不移动后续索引；需要移动时可用 invoke_method 调用 splice。snapshot 返回独立 Godot Array。共享句柄保持 JS 身份，可以表达循环引用。",
+    "methods": {},
+    "members": {},
+    "signals": {}
+  },
+  "UltralightJSObject": {
+    "brief_description": "保留当前文档中的实时 JavaScript 普通对象。",
+    "description": "通过 get_value、set_value 访问属性；keys 返回自有可枚举属性名。invoke_method 保留此对象作为 JS this；snapshot 将支持的数据复制为独立 Godot Dictionary。",
+    "methods": {},
+    "members": {},
+    "signals": {}
+  },
+  "UltralightJSValue": {
+    "brief_description": "以文档作用域句柄执行带错误检查的 JavaScript 操作。",
+    "description": "只能在 Godot 主线程及创建它的文档中使用。大多数访问方法返回 [UltralightResult]；嵌套数组和对象继续共享，snapshot 则生成独立容器。\n\nclose 释放当前句柄，并使共享该句柄的别名失效。导航、绑定撤销和关闭 View 同样使句柄失效。快照拒绝循环和超过 64 层的嵌套。",
+    "methods": {
+      "get_value": "读取索引或名称对应的属性，结果使用共享转换。JS 属性不存在时成功返回 UltralightUndefined。",
+      "set_value": "写入索引或名称对应的属性，遵守源容器类型和只读约束。失败通过 Result 返回。",
+      "utf8_bytes": "将保留的 JS 值转为 UTF-8 字节，成功结果为 PackedByteArray。可保留 Godot String 无法表示的内嵌 NUL 字节。",
+      "snapshot": "递归复制支持的数据，生成独立容器；循环引用、超过 64 层的嵌套或不支持的值返回错误。",
+      "keys": "成功结果为自有可枚举字符串键组成的 Array。",
+      "size": "返回数组长度或自有可枚举键数量。关闭或访问失败时返回 -1；0 表示有效的空集合。",
+      "append": "向 JS Array 尾部追加共享转换后的值；非数组句柄返回 TypeMismatch。",
+      "remove": "按 JS delete 语义删除属性，数组后续索引不会移动。不可配置的属性无法删除，返回失败结果。",
+      "invoke_method": "使用 arguments 调用对象上名为 name 的函数，并保留此对象作为 this。成员不是函数时返回 TypeMismatch。",
+      "invoke": "使用 arguments 调用保留的函数。返回值使用共享转换；需要保留接收对象的 this 时使用 invoke_method。",
+      "close": "释放保留值，共享同一句柄的别名同时失效。",
+      "is_closed": "返回是否已显式关闭，或所属文档／绑定是否已失效。"
+    },
+    "members": {},
+    "signals": {}
+  },
+  "UltralightResult": {
+    "brief_description": "明确区分成功值与结构化失败。",
+    "description": "先检查 [member ok]，再读取 [member value] 或 [member error]。成功的 JS null 对应 Nil，undefined 对应 [UltralightUndefined]。新的求值接口不会自动把失败打印为 Godot 错误。",
+    "methods": {
+      "is_ok": "读取 [member ok]。",
+      "get_value": "读取 [member value]。",
+      "get_error": "读取 [member error]。"
+    },
+    "members": {
+      "ok": "结果是否成功，只读。",
+      "value": "成功时的转换值，Nil 可以是有效的 JS null。",
+      "error": "失败时的结构化错误；成功时为 null。"
+    },
+    "signals": {}
+  },
+  "UltralightSingleton": {
+    "brief_description": "管理共享的 Ultralight 渲染器及远程 Inspector。",
+    "description": "此单例由引擎注册，所有 View 共用。GDScript 使用 [code]Engine.get_singleton(\"UltralightSingleton\")[/code]，C# 使用 [code]Engine.Singleton.GetSingleton(\"UltralightSingleton\")[/code]。\n\n逻辑更新已连接 SceneTree 的 process_frame，渲染已连接 RenderingServer 的 frame_pre_draw。普通应用无需手动推进循环。",
+    "methods": {
+      "update_logic": "更新计时器并分发回调。默认每个 SceneTree process_frame 自动调用。通过 set_process 关闭自动逻辑更新后，宿主需定期调用此方法。",
+      "update_frame": "内部渲染回调，将活动页面绘制到 CPU Surface 或 GPU 目标。已自动连接 frame_pre_draw，应用无需手动调用。",
+      "set_process": "启用或关闭自动逻辑更新，不影响自动渲染连接。关闭后需自行调用 update_logic 推进计时器和回调。",
+      "start_remote_inspector_server": "在 address 和 port 上启动远程 Inspector，返回是否成功。须在 Godot 主线程调用，使用匹配 SDK 的 mini-browser 连接。"
+    },
+    "members": {},
+    "signals": {}
+  },
+  "UltralightTask": {
+    "brief_description": "只完成一次，并保留最终结果的异步操作。",
+    "description": "操作可能同步完成，因此应先检查 is_completed，再等待 completed，最后调用 get_result。终态只接受第一次完成。\n\ncancel 取消本次观察或结果投递，不撤销业务副作用，也不强行终止 JS Promise。公开的 resolve/reject 供 register_async 处理器完成宿主请求使用，均须在主线程调用。",
+    "methods": {
+      "is_completed": "返回是否已保留最终结果。",
+      "get_result": "返回保留的 UltralightResult；未完成时返回 null。",
+      "resolve": "以成功值完成宿主异步请求。默认值为 Nil；重复完成被忽略，只能在主线程调用。",
+      "reject": "以指定错误代码和消息完成宿主异步请求。重复完成被忽略，只能在主线程调用。",
+      "cancel": "未完成时以 Cancelled 结束本次观察或投递，不撤销已经执行的业务操作。只能在主线程调用。"
+    },
+    "members": {},
+    "signals": {
+      "completed": "任务进入终态时只发出一次。先检查 is_completed 再等待，完成后通过 get_result 读取保留结果。"
+    }
+  },
+  "UltralightUndefined": {
+    "brief_description": "在新接口中明确表示 JavaScript undefined。",
+    "description": "桥接层使用共享实例表示 undefined，JS null 仍对应 Godot Nil。旧 execute_script 接口保留原来的兼容转换行为。",
+    "methods": {},
+    "members": {},
+    "signals": {}
+  },
+  "UltralightView": {
+    "brief_description": "在 Godot TextureRect 中显示 HTML、CSS 和 JavaScript 页面。",
+    "description": "进入场景且尺寸有效后自动初始化。用 load_url 或 load_html 显式导航，用 [UltralightAPI] 在页面脚本执行前安装业务接口，并在导航后自动恢复。\n\n新的求值接口默认共享容器，并用 [UltralightResult] 明确报告错误。导航、rebuild 和 close 会使旧文档句柄及未完成任务失效。逻辑更新与绘制由 Godot 帧循环推进，无需 AppCore。",
+    "methods": {
+      "set_accelerated": "设置 [member accelerated]。",
+      "get_accelerated": "读取 [member accelerated]。",
+      "is_accelerated": "返回实际是否使用 GPU RenderingDevice。accelerated 仅表示请求；设备不可用或初始化失败时可回退到 CPU。",
+      "get_render_statistics": "返回渲染统计。始终包含实际后端 accelerated、SDK 版本 sdk_edition、SDK 帧率上限 sdk_max_fps、单 View 上限 max_render_fps、共享 Ultralight 渲染时间 ultralight_render_us，以及当前 View 的 cpu_page_upload_bytes、cpu_mipmap_count、cpu_upload_us。CPU 累计计数在重建后保留。\n\n仅实际启用 GPU 时追加 gpu_available、bitmap_upload_bytes、geometry_upload_bytes、state_upload_bytes、draws、batches、feedback_copies、render_passes、rd_record_us、gpu_us、gpu_draws_by_shader。GPU 计数覆盖全部 View；GPU 计时为零也可能表示时间戳不可用。Canvas 等 SDK 位图内容在 GPU 模式仍可能上传。\n\nCPU、未初始化和回退状态不包含 GPU 字段。渲染准备时间不包含渲染调用以外的脚本执行，不能作为应用总帧耗时。",
+      "set_max_render_fps": "设置 [member max_render_fps]。",
+      "get_max_render_fps": "读取 [member max_render_fps]。",
+      "get_bridge_statistics": "返回绑定、宿主容器代理、宿主对象代理与 JS 保留句柄数量，用于诊断。尚无桥接上下文时返回空 Dictionary。",
+      "unbind": "撤销当前同名临时导出及其嵌套代理。持久注册项使用注册表的 unregister。",
+      "load_url": "导航到 url，返回等待主文档 DOM 就绪的任务。timeout 单位为秒，须有限、为正且不超过 1,000,000,000。尚未完成布局时等待有效尺寸。",
+      "load_html": "加载内联 HTML，base_url 为相对脚本、样式和图片提供基址。返回主文档 DOM 就绪任务；timeout 单位为秒。",
+      "reload": "重新加载当前页面，返回主文档 DOM 就绪任务。内联页面保留 HTML 与 base_url。",
+      "wait_ready": "观察调用时的主文档。已就绪时可同步完成；未完成时发生导航会使等待失效。",
+      "wait_for_selector": "等待当前主文档出现匹配的 CSS 元素。只检查存在性，不检查可见性；无效选择器返回错误。",
+      "evaluate": "同步求值并返回明确的 Result。数组和普通对象使用实时共享句柄，null 对应 Nil，undefined 对应 UltralightUndefined。",
+      "evaluate_copy": "同步求值并将自有可枚举数据递归复制为独立 Godot 容器。循环、超过 64 层或不支持的值会失败。",
+      "evaluate_handle": "求值并保留原始 JS 值，返回 UltralightJSValue，包括原始字符串、其他基本值和函数。",
+      "evaluate_async": "求值并观察返回的 Promise；普通返回值也会完成任务。timeout 单位为秒，导航会撤销旧文档投递。",
+      "is_closed": "返回此 View 是否已被 close 永久关闭。",
+      "close": "永久关闭 View，分离注册表，使旧句柄失效并结束未完成任务。之后不能重新加载。",
+      "is_initialized": "返回原生 SDK View 是否已创建。",
+      "is_loading": "返回主文档是否正在加载。",
+      "is_document_ready": "读取 [member document_ready]。",
+      "get_navigation_id": "读取 [member navigation_id]。",
+      "get_current_url": "读取 [member current_url]。",
+      "get_last_load_error": "返回最近一次主文档加载错误；没有错误时为 null。",
+      "input_text": "向页面发送已经提交的文本，不包含 IME 预编辑和候选框定位。",
+      "scroll_pixels": "向页面发送像素单位的滚动增量。",
+      "set_source_type": "设置 [member source_type]。",
+      "get_source_type": "读取 [member source_type]。",
+      "set_initial_url": "设置 [member initial_url]。",
+      "get_initial_url": "读取 [member initial_url]。",
+      "set_initial_html": "设置 [member initial_html]。",
+      "get_initial_html": "读取 [member initial_html]。",
+      "set_initial_base_url": "设置 [member initial_base_url]。",
+      "get_initial_base_url": "读取 [member initial_base_url]。",
+      "set_html_content": "设置 [member html]。",
+      "get_html_content": "读取 [member html]。",
+      "set_html_url": "设置 [member htmlUrl]。",
+      "get_html_url": "读取 [member htmlUrl]。",
+      "set_transparent": "设置 [member transparent]。",
+      "get_transparent": "读取 [member transparent]。",
+      "set_lazy": "设置 [member lazy]。",
+      "get_lazy": "读取 [member lazy]。",
+      "rebuild": "按当前渲染配置重建原生 View，使旧文档状态和任务失效；新文档会恢复已附着的 API 注册表。",
+      "init_view": "兼容的重建入口。普通加载使用自动初始化和显式 load 方法，无需手写布局等待流程。",
+      "bind_func": "兼容的函数导出入口。新代码使用返回可撤销句柄的 bind_function，或持久注册表的 register_function。",
+      "bind_object": "临时导出 Godot Object，可配置 UltralightBindingOptions，并返回可撤销句柄。根 Array／Dictionary 或跨导航导出使用 UltralightAPI.register_object。",
+      "bind_function": "临时导出全局函数，返回可撤销的 UltralightBinding。导航持久化使用 UltralightAPI。",
+      "bind_object_legacy": "兼容旧 query_members 布尔参数。新代码使用注册表和独立的成员／只读选项。",
+      "execute_script": "兼容的按值求值入口，以 Nil 和日志报告失败。新代码使用 evaluate 区分成功 null 与错误，并获取共享值。",
+      "fire_key_event": "向已初始化页面转发键盘事件。普通 Control 输入会在 View 获得焦点时自动转发。",
+      "fire_mouse_event": "向已初始化页面转发鼠标事件。position 为 View 本地像素坐标；MOUSE_BUTTON_NONE 表示移动，普通按钮配合 is_pressed 表示按下／释放，滚轮按钮表示滚动。普通 Control 会自动转发 GUI 输入。",
+      "on_update_frame": "内部生命周期回调，在 Godot 绘制后发布纹理。已自动连接，应用无需调用。",
+      "on_resized": "内部生命周期回调，按 Control 尺寸调整已初始化页面。已自动连接，应用无需调用。"
+    },
+    "members": {
+      "accelerated": "请求 GPU RenderingDevice。实际结果用 is_accelerated 查询；修改后调用 rebuild 应用，会重新加载页面。Compatibility、headless 或设备不可用时回退到 CPU。",
+      "max_render_fps": "单 View 动画与重绘帧率上限，运行时立即生效并在重建后保留。0 仅移除此项限制；SDK Free 版的 60 FPS 上限、Godot 帧率限制和 VSync 仍独立生效。",
+      "source_type": "初始来源类型：0 为 URL，1 为内联 HTML。",
+      "initial_url": "source_type 为 0 时，自动初始化加载的 URL。",
+      "initial_html": "source_type 为 1 时，自动初始化加载的 HTML。",
+      "initial_base_url": "初始内联 HTML 中相对资源的基址。",
+      "document_ready": "当前主文档是否已达到 DOM 就绪，只读。",
+      "navigation_id": "主文档代次，只读。",
+      "current_url": "运行时主文档的实际 URL，与初始页面配置分开，只读。",
+      "html": "兼容的内联来源属性。新代码使用 initial_html／source_type 配置初始页面，或 load_html 显式导航。",
+      "htmlUrl": "兼容的 URL 来源属性。新代码使用 initial_url 配置初始页面，或 load_url 显式导航。",
+      "transparent": "启用透明页面背景。初始化前配置；已创建页面需 rebuild 才能应用。",
+      "lazy": "推迟自动初始化；显式加载请求仍会在布局尺寸有效后触发初始化。"
+    },
+    "signals": {
+      "load_started": "主文档开始加载时发出。",
+      "window_ready": "主文档全局对象可用时发出，注册表已安装，页面脚本尚未执行。",
+      "dom_ready": "主文档 DOM 就绪时发出，状态先更新再派发信号；不表示业务异步工作已经结束。",
+      "frame_dom_ready": "任意框架（含主框架）DOM 就绪时发出。通过 event.is_main_frame 和 event.frame_id 区分；同时监听 dom_ready 会收到两次主框架通知。",
+      "load_finished": "主文档加载完成时发出，不保证后续不再发生网络请求。",
+      "load_failed": "主文档加载失败时发出。failure 包含 event、error、SDK 错误域 domain 和错误代码 code。",
+      "console_message": "页面控制台消息，包含 level、message、source_url、line、column 和 navigation_id 等可获得信息。",
+      "on_window_object_ready": "兼容信号。新代码使用 window_ready(event)，持久绑定使用 UltralightAPI 注册表。",
+      "on_dom_ready": "兼容的主文档 DOM 信号。新代码使用 dom_ready(event)；子框架通知使用 frame_dom_ready(event)。"
+    }
+  }
+}

@@ -45,7 +45,7 @@
   "install_text": "Download an extension package from Releases and extract it into your Godot project root. The manifest belongs at addons/ultralight-view/ultralight-view.gdextension.",
   "requirements": "Godot 4.3+ · Windows x86_64 / Linux x86_64 / macOS arm64",
   "connect_title": "Connect JavaScript",
-  "connect_text": "Add a node named UltralightView, give it a nonzero size, and enable lazy in the Inspector. Reinstall bindings in on_window_object_ready for each page load. C# requires Godot .NET and a matching .NET SDK.",
+  "connect_text": "Add an UltralightView with a nonzero size, register application APIs with UltralightAPI, and attach the registry to the View. Registrations are restored after navigation. C# requires the packaged csharp sources, Godot .NET and a compatible .NET SDK.",
   "html_text": "Save this page as ui/index.html in your project.",
   "api_title": "Plugin API",
   "api_description": "Find properties, methods and signals for page lifecycle, object bindings and rendering.",
@@ -67,11 +67,11 @@
   "accessors": "Accessors",
   "on_this_page": "On this page",
   "lifecycle_title": "Document lifecycle",
-  "lifecycle_text": "Connect signals before loading. Install bindings in on_window_object_ready, then use on_dom_ready for DOM-dependent code. Navigation, reload and init_view replace the document; JavaScript Callables and Promises retained from the old document expire.",
+  "lifecycle_text": "Load explicitly with load_url/load_html and wait for main-document dom_ready. frame_dom_ready also reports child frames. Registries install before window_ready and page scripts. Navigation, reload and rebuild invalidate old handles and unfinished tasks.",
   "bridge_title": "Data and objects",
-  "bridge_text": "Returned Arrays and Dictionaries become detached JavaScript containers. Godot objects use proxies; JavaScript functions become Callables. Default object bindings support ordinary public C# properties; query mode requires [Export] on C# properties.",
+  "bridge_text": "Containers are shared in both directions and nested values are wrapped lazily. Use evaluate_copy or snapshot for independent copies. C# helpers support public members, Task/ValueTask and collection adapters without [Export]. read_only restricts writes; members selects root members.",
   "render_title": "Rendering configuration",
-  "render_text": "accelerated requests RenderingDevice; use is_accelerated() to confirm the actual backend. Compatibility and headless use CPU Surface. Changes to accelerated or transparent require init_view(), which reloads the page.",
+  "render_text": "accelerated requests RenderingDevice; is_accelerated() reports the actual backend. Compatibility and headless fall back to CPU. Apply accelerated or transparent changes with rebuild(), which replaces the document.",
   "fps_text": "Ultralight Free caps View animations and repaints at 60 FPS. max_render_fps = 0 removes only the per-view limit, not the SDK edition ceiling.",
   "copy": "Copy",
   "copied": "Copied",
@@ -81,5 +81,6 @@
   "license_title": "Assets & licenses",
   "license_description": "Sample previews are recordings of the running Godot applications. Source, artwork, fonts and runtime libraries retain their respective licenses.",
   "code_license": "Plugin source · GPL v3",
-  "art_license": "Ashen Reliquary artwork & font credits"
+  "art_license": "Ashen Reliquary artwork & font credits",
+  "readonly": "Read-only"
 }

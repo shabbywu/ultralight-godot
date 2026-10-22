@@ -1,7 +1,7 @@
 # Sources and licenses
 
-- The inventory frontend includes code from
-  [ultralight-py-showcase Ashen Reliquary](https://github.com/shabbywu/ultralight-py-showcase/tree/main/examples/ashen-reliquary).
+- The inventory frontend includes Ashen Reliquary code from
+  [shabbywu](https://github.com/shabbywu).
   GPL v3 text is preserved in `LICENSE.GPL-3.0.txt`.
 - Artwork comes from the Ultralight SDK sample `13-game-ui/assets/scenes/ashen-reliquary`.
   Item photographs are Cleveland Museum of Art Open Access (CC0); textures derive
