@@ -25,7 +25,7 @@ gui_embed_subwindows = true
 size = Vector2i(1024, 768)
 
 [node name="UltralightView" type="UltralightView" parent="SubViewport"]
-htmlUrl = "https://blog.shabbywu.cn/"
+initial_url = "https://blog.shabbywu.cn/"
 transparent = true
 lazy = true
 offset_right = 1024.0

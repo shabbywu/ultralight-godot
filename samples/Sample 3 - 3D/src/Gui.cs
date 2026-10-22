@@ -30,13 +30,13 @@ public partial class Gui : Node3D {
         _nodeArea.MouseExited += OnMouseExitedArea;
         _nodeArea.InputEvent += OnMouseInputEvent;
 
-        _ultralightView.Connect("on_dom_ready", Callable.From(() => { backing_OnDomReady?.Invoke(); }));
+        _ultralightView.Connect("dom_ready", Callable.From<GodotObject>(_ => { backing_OnDomReady?.Invoke(); }));
 
-        _ultralightView.Connect("on_window_object_ready",
-                                Callable.From(() => { backing_OnWindowObjectReady?.Invoke(); }));
+        _ultralightView.Connect("window_ready",
+                                Callable.From<GodotObject>(_ => { backing_OnWindowObjectReady?.Invoke(); }));
 
         _ultralightView.Call("init_view");
-        Engine.Singleton.GetSingleton("UltralightSingleton").Call("start_remove_inspector_server", "127.0.0.1", 19999);
+        Engine.Singleton.GetSingleton("UltralightSingleton").Call("start_remote_inspector_server", "127.0.0.1", 19999);
     }
 
     // Called every frame. 'delta' is the elapsed time since the previous frame.

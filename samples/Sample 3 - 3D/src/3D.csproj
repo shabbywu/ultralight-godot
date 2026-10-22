@@ -4,4 +4,7 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <RootNamespace>ThreeD</RootNamespace>
   </PropertyGroup>
+  <ItemGroup Condition="!Exists('addons/ultralight-view/csharp/UltralightApi.cs')">
+    <Compile Include="../../../addons/ultralight-view/csharp/*.cs" Link="addons/ultralight-view/csharp/%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>
