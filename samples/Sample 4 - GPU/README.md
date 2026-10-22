@@ -1,5 +1,7 @@
 # Sample 4 - GPU
 
+![GPU / CPU rendering preview](../../docs/media/sample-4.webp)
+
 A dedicated desktop rendering test bench. The large webpage preview sits beside native Godot performance metrics and clickable controls. Sample 3 remains the original 3D demo.
 
 ## Run locally

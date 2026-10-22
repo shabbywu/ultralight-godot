@@ -93,6 +93,10 @@ above for setup instructions.
 
 ![Scrolling web content and physics objects in a 3D scene](docs/media/sample-3.webp)
 
+### 4 · GPU / CPU comparison
+
+![Switching rendering backends and SVG / Canvas animation](docs/media/sample-4.webp)
+
 ## JavaScript bindings
 
 Expose a Godot object to JavaScript with the default compatibility mode:

@@ -88,6 +88,10 @@ ultralight-godot 通过 GDExtension 将 [Ultralight](https://ultralig.ht/) 集�
 
 ![3D 场景中的网页滚动与物理物体](docs/media/sample-3.webp)
 
+### 4 · GPU / CPU 对比
+
+![切换渲染后端与 SVG、Canvas 动画](docs/media/sample-4.webp)
+
 ## JavaScript 绑定
 
 通过默认兼容模式，将 Godot 对象暴露给 JavaScript：
