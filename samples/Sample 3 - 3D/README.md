@@ -9,5 +9,6 @@ Simple Example show how to integrate ultralight-view in 3D world.
 - [x] Rendering interactive html in godot 3D scene.
 - [x] Loading font set by godot theme.
 
-## Screenshot
-https://github.com/user-attachments/assets/bbc25e23-3827-4581-b3c0-ba3ac2a38baa
+## Preview
+
+![3D web interface](../../docs/media/sample-3.webp)

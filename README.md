@@ -74,15 +74,24 @@ from the same release. Each browser package includes its SDK runtime libraries.
 | Example | What it demonstrates |
 | --- | --- |
 | [Load HTML and bind a C# callback](samples/Sample%201%20-%20Load%20Html%20And%20Bind%20CSharp%20Callback) | Loading web content and calling C# from JavaScript |
-| [Grid inventory](samples/Sample%202%20-%20Inventory%20System) | An inventory interface built with web technologies |
+| [Ashen Reliquary](samples/Sample%202%20-%20Inventory%20System) | An inventory interface built with web technologies |
 | [3D interface](samples/Sample%203%20-%203D) | Integrating `UltralightView` into a 3D scene |
 | [GPU / CPU comparison](samples/Sample%204%20-%20GPU) | Canvas/SVG animation, FPS, and rendering timings |
 
-Demo videos:
+Looping WebP recordings from the running Godot samples. Follow the sample links
+above for setup instructions.
 
-https://github.com/user-attachments/assets/b193f148-a446-4772-89aa-aed81d1bd360
+### 1 · HTML and C# callbacks
 
-https://github.com/user-attachments/assets/bbc25e23-3827-4581-b3c0-ba3ac2a38baa
+![Button hover effects and JavaScript calls to C#](docs/media/sample-1.webp)
+
+### 2 · Ashen Reliquary inventory
+
+![Equipment, sockets, shortcuts and backend item generation](docs/media/sample-2.webp)
+
+### 3 · Web interfaces in 3D
+
+![Scrolling web content and physics objects in a 3D scene](docs/media/sample-3.webp)
 
 ## JavaScript bindings
 

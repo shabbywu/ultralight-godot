@@ -1,5 +1,7 @@
 # Ashen Reliquary
 
+![Sample 2 preview](../../docs/media/sample-2.webp)
+
 A Godot .NET inventory sample rendered with Ultralight. Supports equipment slots,
 stack splitting and merging, gem sockets, shortcuts and saved inventories.
 

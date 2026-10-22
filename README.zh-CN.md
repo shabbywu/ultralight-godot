@@ -70,15 +70,23 @@ ultralight-godot 通过 GDExtension 将 [Ultralight](https://ultralig.ht/) 集�
 | 示例 | 演示内容 |
 | --- | --- |
 | [加载 HTML 并绑定 C# 回调](samples/Sample%201%20-%20Load%20Html%20And%20Bind%20CSharp%20Callback) | 加载网页内容，通过 JavaScript 调用 C# |
-| [网格背包](samples/Sample%202%20-%20Inventory%20System) | 使用网页技术构建背包界面 |
+| [Ashen Reliquary 背包](samples/Sample%202%20-%20Inventory%20System) | 使用网页技术构建背包界面 |
 | [3D 界面](samples/Sample%203%20-%203D) | 在 3D 场景中集成 `UltralightView` |
 | [GPU / CPU 对比](samples/Sample%204%20-%20GPU) | Canvas/SVG 动画、FPS 和渲染耗时 |
 
-演示视频：
+以下为实际 Godot 运行画面的循环 WebP 录制，点击示例名称查看使用说明。
 
-https://github.com/user-attachments/assets/b193f148-a446-4772-89aa-aed81d1bd360
+### 1 · HTML 与 C# 回调
 
-https://github.com/user-attachments/assets/bbc25e23-3827-4581-b3c0-ba3ac2a38baa
+![按钮悬停及 JavaScript 调用 C#](docs/media/sample-1.webp)
+
+### 2 · Ashen Reliquary 背包
+
+![装备、镶嵌、快捷栏和后端生成物品](docs/media/sample-2.webp)
+
+### 3 · 3D 网页界面
+
+![3D 场景中的网页滚动与物理物体](docs/media/sample-3.webp)
 
 ## JavaScript 绑定
 
